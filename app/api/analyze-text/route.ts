@@ -31,19 +31,19 @@ export async function POST(request: NextRequest) {
     const { text: analysis } = await generateText({
       model: openai("gpt-4o-mini"),
       prompt: `Analyze the following text for grammar, spelling, and style issues. Return your response as a JSON array of suggestions. Each suggestion should have the following structure:
-      {
-        "type": "grammar" | "spelling" | "style",
-        "original_text": "the text that needs correction",
-        "suggested_text": "the corrected text",
-        "start_index": number (character position where the issue starts),
-        "end_index": number (character position where the issue ends),
-        "message": "explanation of the issue and why the suggestion improves it"
-      }
+{
+  "type": "grammar" | "spelling" | "style",
+  "original_text": "the text that needs correction",
+  "suggested_text": "the corrected text",
+  "start_index": number (character position where the issue starts),
+  "end_index": number (character position where the issue ends),
+  "message": "explanation of the issue and why the suggestion improves it"
+}
 
-      Only return the JSON array, no other text. If no issues are found, return an empty array [].
+Only return the JSON array, no other text. If no issues are found, return an empty array [].
 
-      Text to analyze:
-      "${text}"`,
+Text to analyze:
+${text}`,
     })
 
     let suggestions = []

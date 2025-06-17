@@ -19,7 +19,7 @@ export function SuggestionsSidebar({ suggestions, selectedId, onSelect }: Sugges
             onClick={() => onSelect(String(idx))}
           >
             <div className="font-medium">{s.message}</div>
-            <div className="text-xs text-gray-500">{s.suggestion}</div>
+            <div className="text-xs text-gray-500">{s.suggested_text}</div>
           </li>
         ))}
       </ul>

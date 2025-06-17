@@ -73,7 +73,8 @@ export default function EditorPage() {
 
       setDocument(data)
       setTitle(data.title)
-      setContent(data.content)
+      // console.log(data.content)
+      setContent(JSON.stringify(data.content))
     } catch (error) {
       console.error("Error fetching document:", error)
       router.push("/dashboard")
@@ -137,7 +138,7 @@ export default function EditorPage() {
   }
 
   const handleEditorChange = useCallback((editorState: EditorState) => {
-    setContent(JSON.stringify(editorState.toJSON()))
+    setContent(editorState.toJSON())
   }, [])
 
   const handleTextChange = useCallback((text: string) => {
