@@ -23,7 +23,6 @@ import { AutoLinkNode, LinkNode } from "@lexical/link"
 import { ToolbarPlugin } from "./toolbar-plugin"
 import { SuggestionDecoratorNode, SuggestionPlugin } from "./suggestion-plugin"
 import type { AISuggestion } from "@/lib/types"
-import { stripSuggestions } from "@/lib/utils"
 
 const theme = {
   ltr: "ltr",

@@ -35,10 +35,11 @@ export function ToolbarPlugin() {
 
       // Detect block type
       const anchorNode = selection.anchor.getNode()
-      let element = anchorNode.getKey() === "root" ? anchorNode : anchorNode.getTopLevelElementOrThrow()
+      const element = anchorNode.getKey() === "root" ? anchorNode : anchorNode.getTopLevelElementOrThrow()
       const type = element.getType()
       if (type === "heading") {
-        // @ts-ignore
+        // @ts-expect-error - legacy type issue
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const tag = element.getTag()
         setBlockType(tag)
       } else {

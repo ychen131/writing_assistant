@@ -3,7 +3,7 @@
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { useEffect } from "react"
 import type { AISuggestion } from "@/lib/types"
-import { $createTextNode, $getRoot, $getSelection, $isRangeSelection, DecoratorNode, EditorConfig, LexicalNode, NodeKey, SerializedLexicalNode, TextNode, ElementNode } from "lexical"
+import { $createTextNode, $getRoot, DecoratorNode, EditorConfig, LexicalNode, NodeKey, SerializedLexicalNode, TextNode, ElementNode } from "lexical"
 import type { JSX } from "react"
 
 export class SuggestionDecoratorNode extends DecoratorNode<JSX.Element> {
@@ -52,7 +52,7 @@ export class SuggestionDecoratorNode extends DecoratorNode<JSX.Element> {
   }
 
   static importJSON(json: SerializedLexicalNode): LexicalNode {
-    const node = new SuggestionDecoratorNode((json.$ as any)['suggestion'] as AISuggestion, (json.$ as any)['originalNode'] as SerializedLexicalNode)
+    const node = new SuggestionDecoratorNode((json.$ as unknown)['suggestion'] as AISuggestion, (json.$ as unknown)['originalNode'] as SerializedLexicalNode)
     return node
   }
 
@@ -76,11 +76,9 @@ interface SuggestionPluginProps {
   suggestions: AISuggestion[]
   setSuggestions: (suggestions: AISuggestion[]) => void
   setIsApplyingSuggestions?: (isApplyingSuggestions: boolean) => void
-  onSuggestionClick?: (id: string) => void
-  selectedSuggestionId?: string | null
 }
 
-export function SuggestionPlugin({ suggestions, setSuggestions, setIsApplyingSuggestions, onSuggestionClick, selectedSuggestionId }: SuggestionPluginProps) {
+export function SuggestionPlugin({ suggestions, setSuggestions, setIsApplyingSuggestions }: SuggestionPluginProps) {
   const [editor] = useLexicalComposerContext()
 
   useEffect(() => {
@@ -129,7 +127,9 @@ export function SuggestionPlugin({ suggestions, setSuggestions, setIsApplyingSug
         if (suggestion.status === "ignored") {
           return;
         }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const startIndex = suggestion.start_index
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const endIndex = suggestion.end_index
         let found = false
         let lastSeenIndex = 0;
@@ -204,3 +204,5 @@ export function SuggestionPlugin({ suggestions, setSuggestions, setIsApplyingSug
 
   return null
 }
+
+// eslint-disable-next-line react-hooks/exhaustive-deps

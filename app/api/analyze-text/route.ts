@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { generateText } from "ai"
 import { openai } from "@ai-sdk/openai"
 import { serverCacheManager } from "@/lib/cache/suggestion-cache"
+import { type AISuggestion } from "@/lib/types"
 
 const CACHE_VERSION = "1.0.0" // Update this when AI model or prompt changes
 
@@ -53,23 +54,25 @@ export async function POST(request: NextRequest) {
       prompt: `Analyze the following text for writing issues. Return your response as a JSON array of suggestions. Each suggestion should have the following structure:\n{\n  \"type\": \"grammar\" | \"spelling\" | \"style\",\n  \"original_text\": \"the text that needs correction\",\n  \"suggested_text\": \"the corrected text\",\n  \"start_index\": number (character position where the issue starts),\n  \"end_index\": number (character position where the issue ends),\n  \"message\": \"explanation of the issue and why the suggestion improves it\",\n  \"category\": \"Correctness\" | \"Clarity\" | \"Engagement\" | \"Delivery\"\n}\n\nCategories:\n- Correctness: Spelling, grammar (verb conjugation, subject-verb agreement, punctuation, word form).\n- Clarity: Wordiness, redundancy, conciseness, ambiguity.\n  - Examples: \"due to the fact that\" → \"because\", \"true facts\" → \"facts\", \"in order to\" → \"to\", \"He saw her duck\" (ambiguous).\n- Engagement: Repetitive vocabulary, passive voice, vague language.\n  - Examples: \"nice, nice, nice\" → \"pleasant, enjoyable, delightful\", \"The ball was thrown by John\" → \"John threw the ball\", \"things\" → \"items\".\n- Delivery: Tone (mismatched for context), confidence/assertiveness.\n  - Examples: \"Hey dude,\" in a business email, \"I think it might be possible\" → \"It is possible\".\n\nAssign each suggestion to the most appropriate category. Do not use 'Other'.\n\nOnly return the JSON array, no other text. If no issues are found, return an empty array [].\n\nText to analyze:\n${text}`,
     })
 
-    let suggestions = []
+    let suggestions: AISuggestion[] = []
     try {
-      suggestions = JSON.parse(analysis)
-      if (!Array.isArray(suggestions)) {
+      const parsedSuggestions = JSON.parse(analysis)
+      if (!Array.isArray(parsedSuggestions)) {
         throw new Error("AI response is not an array")
       }
       console.log("text: ", text)
       // Fix indices for each suggestion and filter out those that cannot be matched
-      suggestions = suggestions
-        .map((sugg: any) => {
+      const mappedSuggestions = parsedSuggestions
+        .map((sugg: Omit<AISuggestion, 'id' | 'status'>) => {
           if (typeof sugg.original_text === 'string' && sugg.original_text.length > 0) {
             // Find the first occurrence of the original_text in the input text
             const idx = text.indexOf(sugg.original_text)
             if (idx !== -1) {
-              sugg.start_index = idx
-              sugg.end_index = idx + sugg.original_text.length
-              return sugg
+              return {
+                ...sugg,
+                id: Math.random(), // Generate a temporary ID
+                status: 'proposed' as const
+              } as AISuggestion
             }
           }
           console.warn("Suggestion cannot be matched: ", {
@@ -78,10 +81,11 @@ export async function POST(request: NextRequest) {
             text_sample: text.substring(sugg.start_index - 10, sugg.end_index + 10),
             index: text.indexOf(sugg.original_text)
           })
-          // Return null for suggestions that cannot be matched
           return null
         })
-        .filter(Boolean)
+        .filter((sugg): sugg is AISuggestion => sugg !== null)
+      
+      suggestions = mappedSuggestions
     } catch (parseError) {
       console.error("Error parsing AI response:", parseError)
       return NextResponse.json({ 

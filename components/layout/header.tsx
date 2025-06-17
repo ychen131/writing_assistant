@@ -16,7 +16,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 export function Header() {
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<unknown>(null)
   const supabase = createClient()
   const router = useRouter()
 

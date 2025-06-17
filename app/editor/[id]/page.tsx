@@ -10,14 +10,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { useSuggestionCache } from "@/hooks/use-suggestion-cache"
-import { $getRoot, SerializedLexicalNode, type EditorState } from "lexical"
-import { ArrowLeft, Save, CheckCircle, Zap, Database } from "lucide-react"
+import { type EditorState } from "lexical"
+import { ArrowLeft, Save, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { useDebounce } from "@/hooks/use-debounce"
 import { SuggestionsSidebar } from "@/components/editor/suggestions-sidebar"
-import { stripSuggestions } from "@/lib/utils"
-import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
-import { $createTextNode } from "lexical"
 
 export default function EditorPage() {
   const params = useParams()
@@ -26,15 +23,14 @@ export default function EditorPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
-  const [lastSavedContent, setLastSavedContent] = useState<any>(null)
+  const [lastSavedContent, setLastSavedContent] = useState<unknown>(null)
   const [title, setTitle] = useState("")
-  const [content, setContent] = useState<any>(null)
+  const [content, setContent] = useState<unknown>(null)
   const [textContent, setTextContent] = useState("")
   const [lastAnalyzedText, setLastAnalyzedText] = useState("")
   const [isApplyingSuggestions, setIsApplyingSuggestions] = useState(false)
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [cacheHit, setCacheHit] = useState(false)
   const [selectedSuggestionId, setSelectedSuggestionId] = useState<string | null>(null)
 
   const supabase = createClient()
@@ -42,50 +38,21 @@ export default function EditorPage() {
 
   // Debounce text content for AI analysis
   const debouncedTextContent = useDebounce(textContent, 1000)
-    // Initialize suggestion cache
-  const { getCachedSuggestions, cacheSuggestions, clearCache, getCacheStats, isCacheLoading, cacheHitRate } =
-  useSuggestionCache({
+  // Initialize suggestion cache
+  const { getCachedSuggestions, cacheSuggestions } = useSuggestionCache({
     documentId,
     onCacheHit: (cachedSuggestions) => {
       console.log("Cache hit! Loaded", cachedSuggestions.length, "suggestions")
-      setCacheHit(true)
     },
     onCacheMiss: () => {
       console.log("Cache miss, will call AI API")
-      setCacheHit(false)
     },
     onCacheError: (error) => {
       console.error("Cache error:", error)
     },
   })
 
-
-  useEffect(() => {
-    if (documentId) {
-      fetchDocument()
-    }
-  }, [documentId])
-
-  // Auto-save when content or title changes
-  useEffect(() => {
-    if (document && (content || title !== document.title)) {
-      const timer = setTimeout(() => {
-        saveDocument()
-      }, 2000)
-
-      return () => clearTimeout(timer)
-    }
-  }, [content, title, document])
-
-  // Analyze text for suggestions when debounced text changes
-  useEffect(() => {
-    if (!isApplyingSuggestions && debouncedTextContent && debouncedTextContent.length > 10 && debouncedTextContent !== lastAnalyzedText) {
-      analyzeText(debouncedTextContent)
-    }
-    setLastAnalyzedText(debouncedTextContent)
-  }, [debouncedTextContent, lastAnalyzedText, isApplyingSuggestions])
-
-  const fetchDocument = async () => {
+  const fetchDocument = useCallback(async () => {
     try {
       const { data, error } = await supabase.from("documents").select("*").eq("id", documentId).single()
 
@@ -99,7 +66,6 @@ export default function EditorPage() {
 
       setDocument(data)
       setTitle(data.title)
-      // console.log(data.content)
       if(data.content && typeof data.content === "string") {
         setContent(data.content)
       } else {
@@ -111,9 +77,9 @@ export default function EditorPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [documentId, router, supabase])
 
-  const saveDocument = async () => {
+  const saveDocument = useCallback(async () => {
     if (!document || isSaving) return
     if (content === lastSavedContent) {
       return
@@ -145,21 +111,18 @@ export default function EditorPage() {
     } finally {
       setIsSaving(false)
     }
-  }
+  }, [document, isSaving, content, lastSavedContent, title, supabase, documentId])
 
-  const analyzeText = async (text: string) => {
+  const analyzeText = useCallback(async (text: string) => {
     if (isAnalyzing) return
 
     setIsAnalyzing(true)
-    setCacheHit(false)
-
     try {
       // First check cache
       const cacheResult = await getCachedSuggestions(text)
 
       if (cacheResult.hit) {
         setSuggestions(cacheResult.suggestions)
-        setCacheHit(true)
         return
       }
       console.log("text: ", text)
@@ -188,7 +151,30 @@ export default function EditorPage() {
     } finally {
       setIsAnalyzing(false)
     }
-  }
+  }, [isAnalyzing, getCachedSuggestions, cacheSuggestions, documentId])
+
+  useEffect(() => {
+    if (documentId) {
+      fetchDocument()
+    }
+  }, [documentId, fetchDocument])
+
+  useEffect(() => {
+    if (document && (content || title !== document.title)) {
+      const timer = setTimeout(() => {
+        saveDocument()
+      }, 2000)
+
+      return () => clearTimeout(timer)
+    }
+  }, [content, title, document, saveDocument])
+
+  useEffect(() => {
+    if (!isApplyingSuggestions && debouncedTextContent && debouncedTextContent.length > 10 && debouncedTextContent !== lastAnalyzedText) {
+      analyzeText(debouncedTextContent)
+    }
+    setLastAnalyzedText(debouncedTextContent)
+  }, [debouncedTextContent, lastAnalyzedText, isApplyingSuggestions, analyzeText])
 
   const handleEditorChange = useCallback((editorState: EditorState) => {
     setContent(editorState.toJSON())
@@ -197,15 +183,6 @@ export default function EditorPage() {
   const handleTextChange = useCallback((text: string) => {
     setTextContent(text)
   }, [])
-
-  const handleClearCache = async () => {
-    const success = await clearCache()
-    if (success) {
-      setSuggestions([])
-      console.log("Cache cleared successfully")
-    }
-  }
-
 
   const handleAcceptSuggestion = useCallback((index: number) => {
       // Remove the ignored suggestion from the list
@@ -260,9 +237,9 @@ export default function EditorPage() {
           </div>
 
           <div className="flex items-center gap-3">
-          {(isAnalyzing || isCacheLoading) && (
+            {isAnalyzing && (
               <Badge variant="secondary" className="animate-pulse">
-                {isCacheLoading ? "Checking cache..." : "Analyzing..."}
+                Analyzing...
               </Badge>
             )}
 

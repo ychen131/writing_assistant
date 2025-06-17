@@ -32,7 +32,7 @@ OPENAI_API_KEY=your_openai_api_key`
             <FileText className="h-8 w-8 text-blue-600" />
             <h1 className="text-3xl font-bold">AI Writing Assistant</h1>
           </div>
-          <p className="text-gray-600 text-lg">Let's get your writing assistant configured and ready to use!</p>
+          <p className="text-gray-600 text-lg">Let&apos;s get your writing assistant configured and ready to use!</p>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
@@ -57,7 +57,7 @@ OPENAI_API_KEY=your_openai_api_key`
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-3">
-                    <h3 className="font-semibold">What you'll need:</h3>
+                    <h3 className="font-semibold">What you&apos;ll need:</h3>
                     <ul className="space-y-2 text-sm">
                       <li className="flex items-center gap-2">
                         <Database className="h-4 w-4 text-green-600" />
@@ -70,7 +70,7 @@ OPENAI_API_KEY=your_openai_api_key`
                     </ul>
                   </div>
                   <div className="space-y-3">
-                    <h3 className="font-semibold">What you'll get:</h3>
+                    <h3 className="font-semibold">What you&apos;ll get:</h3>
                     <ul className="space-y-2 text-sm">
                       <li className="flex items-center gap-2">
                         <CheckCircle className="h-4 w-4 text-green-600" />
@@ -138,7 +138,7 @@ OPENAI_API_KEY=your_openai_api_key`
                     <div className="flex-1">
                       <h4 className="font-medium">Get Your API Credentials</h4>
                       <p className="text-sm text-gray-600 mb-2">
-                        Go to Settings → API in your Supabase project to find your URL and anon key.
+                        Go to Settings &rarr; API in your Supabase project to find your URL and anon key.
                       </p>
                       <div className="bg-gray-100 p-3 rounded-lg text-sm font-mono">
                         <div>Project URL: https://your-project.supabase.co</div>
@@ -208,7 +208,7 @@ OPENAI_API_KEY=your_openai_api_key`
                       <Alert>
                         <AlertDescription>
                           <strong>Important:</strong> Keep your API key secure and never commit it to version control.
-                          You'll need to add credits to your OpenAI account for API usage.
+                          You&apos;ll need to add credits to your OpenAI account for API usage.
                         </AlertDescription>
                       </Alert>
                     </div>

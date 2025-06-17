@@ -2,7 +2,7 @@ export interface Document {
   id: string
   user_id: string
   title: string
-  content: any // Lexical JSON state
+  content: unknown // Lexical JSON state
   created_at: string
   updated_at: string
   last_opened_at: string

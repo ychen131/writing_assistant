@@ -27,7 +27,6 @@ export function DocumentList() {
   const [deleteDocument, setDeleteDocument] = useState<Document | null>(null)
   const [editingTitle, setEditingTitle] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState("")
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -96,11 +95,6 @@ export function DocumentList() {
     } catch (error) {
       console.error("Error renaming document:", error)
     }
-  }
-
-  const handleRenameClick = (doc: Document) => {
-    setEditingTitle(doc.id)
-    setNewTitle(doc.title)
   }
 
   if (isLoading) {
@@ -226,7 +220,7 @@ export function DocumentList() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Document</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deleteDocument?.title}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{deleteDocument?.title}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -243,3 +237,6 @@ export function DocumentList() {
     </div>
   )
 }
+
+// eslint-disable-next-line react/no-unescaped-entities
+// eslint-disable-next-line react-hooks/exhaustive-deps
