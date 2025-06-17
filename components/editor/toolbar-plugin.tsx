@@ -32,6 +32,18 @@ export function ToolbarPlugin() {
       setIsBold(selection.hasFormat("bold"))
       setIsItalic(selection.hasFormat("italic"))
       setIsUnderline(selection.hasFormat("underline"))
+
+      // Detect block type
+      const anchorNode = selection.anchor.getNode()
+      let element = anchorNode.getKey() === "root" ? anchorNode : anchorNode.getTopLevelElementOrThrow()
+      const type = element.getType()
+      if (type === "heading") {
+        // @ts-ignore
+        const tag = element.getTag()
+        setBlockType(tag)
+      } else {
+        setBlockType(type)
+      }
     }
   }, [])
 
