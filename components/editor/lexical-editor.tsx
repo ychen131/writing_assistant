@@ -152,7 +152,7 @@ export function LexicalEditorComponent({
       AutoLinkNode,
       LinkNode,
     ],
-    editorState: initialContent || undefined,
+    editorState: initialContent,
   }
 
   return (
