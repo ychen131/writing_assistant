@@ -12,6 +12,7 @@ import { TRANSFORMERS } from "@lexical/markdown"
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary"
+import React, { useState } from "react"
 
 import { HeadingNode, QuoteNode } from "@lexical/rich-text"
 import { TableCellNode, TableNode, TableRowNode } from "@lexical/table"
@@ -135,6 +136,10 @@ export function LexicalEditorComponent({
   onSuggestionClick,
   selectedSuggestionId,
 }: LexicalEditorProps) {
+  const [textContent, setTextContent] = useState("")
+
+  const wordCount = textContent.trim().length === 0 ? 0 : textContent.trim().split(/\s+/).length
+
   const initialConfig = {
     namespace: "MyEditor",
     theme,
@@ -166,7 +171,13 @@ export function LexicalEditorComponent({
               placeholder={<div className="editor-placeholder">Start writing your document...</div>}
               ErrorBoundary={LexicalErrorBoundary}
             />
-            <MyOnChangePlugin onChange={onChange} onTextChange={onTextChange} />
+            <MyOnChangePlugin
+              onChange={onChange}
+              onTextChange={(text) => {
+                setTextContent(text)
+                onTextChange?.(text)
+              }}
+            />
             <HistoryPlugin />
             <AutoFocusPlugin />
             <LinkPlugin />
@@ -178,6 +189,9 @@ export function LexicalEditorComponent({
               selectedSuggestionId={selectedSuggestionId}
             />
           </div>
+        </div>
+        <div className="editor-word-count" style={{ textAlign: 'right', marginTop: '8px', color: '#888', fontSize: '14px' }}>
+          {wordCount} word{wordCount !== 1 ? 's' : ''}
         </div>
       </LexicalComposer>
     </div>
