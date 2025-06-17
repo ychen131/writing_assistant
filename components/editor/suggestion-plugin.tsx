@@ -8,23 +8,26 @@ import type { JSX } from "react"
 
 export class SuggestionDecoratorNode extends DecoratorNode<JSX.Element> {
   __suggestion: AISuggestion
+  __originalNode: SerializedLexicalNode
 
   static getType(): string {
     return "suggestion-decorator"
   }
 
   static clone(node: SuggestionDecoratorNode): SuggestionDecoratorNode {
-    return new SuggestionDecoratorNode(node.__suggestion, node.__key)
+    return new SuggestionDecoratorNode(node.__suggestion, node.__originalNode, node.__key)
   }
 
-  constructor(suggestion: AISuggestion, key?: NodeKey) {
+  constructor(suggestion: AISuggestion, originalNode: SerializedLexicalNode, key?: NodeKey) {
     super(key)
     this.__suggestion = suggestion
+    this.__originalNode = originalNode
   }
 
   createDOM(config: EditorConfig): HTMLElement {
     const element = document.createElement("span")
-    element.className = `suggestion-${this.__suggestion.type}`
+    // element.className = `suggestion-${this.__suggestion.type}`
+    element.className = "border-b-2 border-red-400 border"
     return element
   }
 
@@ -34,19 +37,33 @@ export class SuggestionDecoratorNode extends DecoratorNode<JSX.Element> {
 
   decorate(): JSX.Element {
     return (
-      <span className={`suggestion-${this.__suggestion.type}`}>
+      <>
         {this.__suggestion.original_text}
-      </span>
+      </>
     )
   }
 
   getSuggestion(): AISuggestion {
     return this.__suggestion
   }
+
+  static importJSON(json: SerializedLexicalNode): LexicalNode {
+    const node = new SuggestionDecoratorNode((json.$ as any)['suggestion'] as AISuggestion, (json.$ as any)['originalNode'] as SerializedLexicalNode)
+    return node
+  }
+
+  exportJSON(): SerializedLexicalNode {
+    return {
+      type: "suggestion-decorator",
+      version: 1,
+      $: { suggestion: this.__suggestion,
+      originalNode: this.__originalNode, }
+    }
+  }
 }
 
-function $createSuggestionDecoratorNode(suggestion: AISuggestion): SuggestionDecoratorNode {
-  return new SuggestionDecoratorNode(suggestion)
+function $createSuggestionDecoratorNode(suggestion: AISuggestion, originalNode: SerializedLexicalNode): SuggestionDecoratorNode {
+  return new SuggestionDecoratorNode(suggestion, originalNode)
 }
 
 interface SuggestionPluginProps {
@@ -71,19 +88,19 @@ export function SuggestionPlugin({ suggestions, onSuggestionClick, selectedSugge
       // decorators.forEach((node) => node.remove())
 
       // Get all text nodes in the editor
-      const textNodes: TextNode[] = []
-      const traverse = (node: LexicalNode) => {
-        if (node instanceof TextNode) {
-          node.setStyle("") 
-          textNodes.push(node)
-        } else if (node instanceof SuggestionDecoratorNode) {
-          const textNode = $createTextNode(node.getSuggestion().original_text)
-          textNodes.push(node.replace(textNode))
-        } else if (node instanceof ElementNode) {
-          node.getChildren().forEach(traverse)
+        const textNodes: TextNode[] = []
+        const traverse = (node: LexicalNode) => {
+          if (node instanceof TextNode) {
+            node.setStyle("") 
+            textNodes.push(node)
+          } else if (node instanceof SuggestionDecoratorNode) {
+            const textNode = $createTextNode(node.getSuggestion().original_text)
+            textNodes.push(node.replace(textNode))
+          } else if (node instanceof ElementNode) {
+            node.getChildren().forEach(traverse)
+          }
         }
-      }
-      root.getChildren().forEach(traverse)
+        root.getChildren().forEach(traverse)
 
       // Process each suggestion
       suggestions.forEach((suggestion) => {
@@ -106,13 +123,13 @@ export function SuggestionPlugin({ suggestions, onSuggestionClick, selectedSugge
             found = true;
             // Calculate the relative positions within this node
             const relativeStart = startIndex - nodeStart
-            const relativeEnd = endIndex - nodeStart
+            const relativeEnd = endIndex - nodeStart + 1
 
-            // console.log("splitting node", textNode, relativeStart, relativeEnd)
+            console.log("splitting node", textNode, relativeStart, relativeEnd)
             // const splitNodes = textNode.splitText(relativeStart, relativeEnd)
             // console.log("splitNodes", splitNodes)
             // if (splitNodes.length > 1) {
-            //   splitNodes[1].replace($createSuggestionDecoratorNode(suggestion))
+            //   splitNodes[1].replace($createSuggestionDecoratorNode(suggestion, splitNodes[1].exportJSON()))
             //   // splitNodes[1].setStyle("@apply border-b-2 border-red-400 border-dotted;")
             // }
             // splitNodes[1].setStyle("background-color:rgb(249, 19, 19);")

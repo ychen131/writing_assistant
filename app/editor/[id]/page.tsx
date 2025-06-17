@@ -10,11 +10,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { useSuggestionCache } from "@/hooks/use-suggestion-cache"
-import type { EditorState } from "lexical"
+import { $getRoot, SerializedLexicalNode, type EditorState } from "lexical"
 import { ArrowLeft, Save, CheckCircle, Zap, Database } from "lucide-react"
 import Link from "next/link"
 import { useDebounce } from "@/hooks/use-debounce"
 import { SuggestionsSidebar } from "@/components/editor/suggestions-sidebar"
+import { stripSuggestions } from "@/lib/utils"
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
+import { $createTextNode } from "lexical"
 
 export default function EditorPage() {
   const params = useParams()
@@ -93,7 +96,11 @@ export default function EditorPage() {
       setDocument(data)
       setTitle(data.title)
       // console.log(data.content)
-      setContent(JSON.stringify(data.content))
+      if(data.content && typeof data.content === "string") {
+        setContent(data.content)
+      } else {
+        setContent(JSON.stringify(data.content))
+      }
     } catch (error) {
       console.error("Error fetching document:", error)
       router.push("/dashboard")
@@ -114,7 +121,8 @@ export default function EditorPage() {
       }
 
       if (content) {
-        updates.content = content
+        console.log("saving content", content)
+        updates.content = content;
       }
 
       if (Object.keys(updates).length > 0) {
@@ -189,24 +197,36 @@ export default function EditorPage() {
     }
   }
 
+
   const handleAcceptSuggestion = useCallback((suggestion: AISuggestion) => {
-    // Update the text content with the suggested text
-    const newText = textContent.slice(0, suggestion.start_index) + 
-                   suggestion.suggested_text + 
-                   textContent.slice(suggestion.end_index);
-    
-    // Update the text content
-    setTextContent(newText);
-    
-    // Remove the accepted suggestion from the list
-    setSuggestions(prev => prev.filter(s => 
-      s.start_index !== suggestion.start_index || 
-      s.end_index !== suggestion.end_index
-    ));
-    
-    // Clear the selected suggestion
-    setSelectedSuggestionId(null);
-  }, [textContent]);
+    // TODO
+    // editor.update(() => {
+    //   const root = $getRoot()
+    //   let currentIndex = 0
+    //   for (const node of root.getAllTextNodes()) {
+    //     const nodeLength = node.getTextContentSize()
+    //     const nodeStart = currentIndex
+    //     const nodeEnd = nodeStart + nodeLength
+    //     // If the suggestion is within this node
+    //     if (
+    //       suggestion.start_index >= nodeStart &&
+    //       suggestion.end_index <= nodeEnd
+    //     ) {
+    //       const relStart = suggestion.start_index - nodeStart
+    //       const relEnd = suggestion.end_index - nodeStart
+    //       // Split and replace
+    //       node.setTextContent(node.getTextContent().replace(suggestion.original_text, suggestion.suggested_text))
+    //       // const [before, after] = node.splitText(relStart, relEnd)
+    //       // const newNode = $createTextNode(suggestion.suggested_text)
+    //       // before.insertAfter(newNode)
+    //       // newNode.insertAfter(after)
+    //       break
+    //     }
+    //     currentIndex = nodeEnd
+    //   }
+    // })
+    // Optionally update textContent and suggestions state as before
+  }, [])
 
   const handleIgnoreSuggestion = useCallback((suggestion: AISuggestion) => {
     // Remove the ignored suggestion from the list

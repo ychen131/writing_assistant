@@ -23,6 +23,7 @@ import { AutoLinkNode, LinkNode } from "@lexical/link"
 import { ToolbarPlugin } from "./toolbar-plugin"
 import { SuggestionDecoratorNode, SuggestionPlugin } from "./suggestion-plugin"
 import type { AISuggestion } from "@/lib/types"
+import { stripSuggestions } from "@/lib/utils"
 
 const theme = {
   ltr: "ltr",
@@ -135,6 +136,7 @@ export function LexicalEditorComponent({
   suggestions = [],
   onSuggestionClick,
   selectedSuggestionId,
+  onAcceptSuggestion,
 }: LexicalEditorProps) {
   function getWordCount(text: string | undefined) {
     return text === undefined ? 0 : text.trim().length === 0 ? 0 : text.trim().split(/\s+/).length
