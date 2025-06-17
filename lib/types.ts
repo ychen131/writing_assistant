@@ -1,0 +1,38 @@
+export interface Document {
+  id: string
+  user_id: string
+  title: string
+  content: any // Lexical JSON state
+  created_at: string
+  updated_at: string
+  last_opened_at: string
+}
+
+export interface Profile {
+  id: string
+  display_name?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Suggestion {
+  id: string
+  document_id: string
+  type: "grammar" | "spelling" | "style"
+  original_text: string
+  suggested_text: string
+  start_index: number
+  end_index: number
+  status: "pending" | "accepted" | "ignored"
+  message?: string
+  created_at: string
+}
+
+export interface AISuggestion {
+  type: "grammar" | "spelling" | "style"
+  original_text: string
+  suggested_text: string
+  start_index: number
+  end_index: number
+  message: string
+}
