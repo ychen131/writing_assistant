@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
       if (!Array.isArray(suggestions)) {
         throw new Error("AI response is not an array")
       }
+      console.log("text: ", text)
       // Fix indices for each suggestion and filter out those that cannot be matched
       suggestions = suggestions
         .map((sugg: any) => {
@@ -71,6 +72,12 @@ export async function POST(request: NextRequest) {
               return sugg
             }
           }
+          console.warn("Suggestion cannot be matched: ", {
+            suggestion: sugg,
+            original_text: sugg.original_text,
+            text_sample: text.substring(sugg.start_index - 10, sugg.end_index + 10),
+            index: text.indexOf(sugg.original_text)
+          })
           // Return null for suggestions that cannot be matched
           return null
         })

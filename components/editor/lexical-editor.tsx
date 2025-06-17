@@ -105,6 +105,7 @@ interface LexicalEditorProps {
   setSuggestions?: (suggestions: AISuggestion[]) => void
   onSuggestionClick?: (id: string) => void
   selectedSuggestionId?: string | null
+  setApplyingSuggestions?: (isApplyingSuggestions: boolean) => void
 }
 
 function MyOnChangePlugin({
@@ -136,6 +137,7 @@ export function LexicalEditorComponent({
   onTextChange,
   suggestions = [],
   setSuggestions,
+  setApplyingSuggestions,
   onSuggestionClick,
   selectedSuggestionId,
 }: LexicalEditorProps) {
@@ -192,6 +194,7 @@ export function LexicalEditorComponent({
             <SuggestionPlugin
               suggestions={suggestions}
               setSuggestions={setSuggestions}
+              setApplyingSuggestions={setApplyingSuggestions}
               onSuggestionClick={onSuggestionClick}
               selectedSuggestionId={selectedSuggestionId}
             />

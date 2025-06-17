@@ -43,6 +43,10 @@ export class SuggestionDecoratorNode extends DecoratorNode<JSX.Element> {
     )
   }
 
+  getTextContent(): string {
+    return this.__suggestion.original_text
+  }
+
   getSuggestion(): AISuggestion {
     return this.__suggestion
   }
@@ -71,14 +75,18 @@ function $createSuggestionDecoratorNode(suggestion: AISuggestion, originalNode: 
 interface SuggestionPluginProps {
   suggestions: AISuggestion[]
   setSuggestions: (suggestions: AISuggestion[]) => void
+  setIsApplyingSuggestions?: (isApplyingSuggestions: boolean) => void
   onSuggestionClick?: (id: string) => void
   selectedSuggestionId?: string | null
 }
 
-export function SuggestionPlugin({ suggestions, setSuggestions, onSuggestionClick, selectedSuggestionId }: SuggestionPluginProps) {
+export function SuggestionPlugin({ suggestions, setSuggestions, setIsApplyingSuggestions, onSuggestionClick, selectedSuggestionId }: SuggestionPluginProps) {
   const [editor] = useLexicalComposerContext()
 
   useEffect(() => {
+    if (setIsApplyingSuggestions) {
+      setIsApplyingSuggestions(true)
+    }
     // if (!editor.hasNodes([SuggestionDecoratorNode])) {
     //   editor.registerNodeTransform(SuggestionDecoratorNode, () => {})
     // }
@@ -91,19 +99,30 @@ export function SuggestionPlugin({ suggestions, setSuggestions, onSuggestionClic
       // decorators.forEach((node) => node.remove())
 
       // Get all text nodes in the editor
-      const textNodes: TextNode[] = []
-      const traverse = (node: LexicalNode) => {
-        if (node instanceof TextNode) {
-          node.setStyle("")
-          textNodes.push(node)
-        } else if (node instanceof SuggestionDecoratorNode) {
-          const textNode = $createTextNode(node.getSuggestion().original_text)
-          textNodes.push(node.replace(textNode))
-        } else if (node instanceof ElementNode) {
-          node.getChildren().forEach(traverse)
+      function getTextNodes(clearSuggestions: boolean): TextNode[] {
+        const textNodes: TextNode[] = []
+        const traverse = (node: LexicalNode) => {
+          if (node instanceof TextNode) {
+            node.setStyle("")
+            textNodes.push(node)
+          } else if (node instanceof SuggestionDecoratorNode) {
+            if(clearSuggestions) {
+              const textNode = $createTextNode(node.getSuggestion().original_text)
+              textNodes.push(node.replace(textNode))
+            }
+          } else if (node instanceof ElementNode) {
+            node.getChildren().forEach(traverse)
+          } else {
+            console.log("unknown node", node)
+          }
         }
+        root.getChildren().forEach(traverse)
+        return textNodes
       }
-      root.getChildren().forEach(traverse)
+
+      const textNodes = getTextNodes(true)  
+
+      console.log("textNodes", textNodes)
 
       // Process each suggestion
       suggestions.forEach((suggestion) => {
@@ -116,7 +135,7 @@ export function SuggestionPlugin({ suggestions, setSuggestions, onSuggestionClic
         let lastSeenIndex = 0;
         console.log("searching for range", suggestion)
         // Find the text node that contains this suggestion
-        for (const textNode of textNodes) {
+        for (const textNode of getTextNodes(false)) {
           const nodeStart = lastSeenIndex;
           const nodeLength = textNode.getTextContentSize();
           lastSeenIndex += nodeLength;
@@ -124,7 +143,8 @@ export function SuggestionPlugin({ suggestions, setSuggestions, onSuggestionClic
           const nodeText = textNode.getTextContent()
 
           // Check if this node contains the suggestion
-          if (startIndex >= nodeStart && endIndex <= nodeEnd) {
+          // if (startIndex >= nodeStart && endIndex <= nodeEnd) {
+          if (nodeText.includes(suggestion.original_text)) {
             console.log("found suggestion in range", nodeStart, nodeEnd);
             found = true;
 
@@ -134,16 +154,16 @@ export function SuggestionPlugin({ suggestions, setSuggestions, onSuggestionClic
             } else if (suggestion.status === "proposed") {
 
               // Calculate the relative positions within this node
-              const relativeStart = startIndex - nodeStart
-              const relativeEnd = endIndex - nodeStart + 1
+              const relativeStart = nodeText.indexOf(suggestion.original_text)
+              const relativeEnd = relativeStart + suggestion.original_text.length
 
               console.log("splitting node", textNode, relativeStart, relativeEnd)
-              // const splitNodes = textNode.splitText(relativeStart, relativeEnd)
-              // console.log("splitNodes", splitNodes)
-              // if (splitNodes.length > 1) {
-              //   splitNodes[1].replace($createSuggestionDecoratorNode(suggestion, splitNodes[1].exportJSON()))
-              //   // splitNodes[1].setStyle("@apply border-b-2 border-red-400 border-dotted;")
-              // }
+              const splitNodes = textNode.splitText(relativeStart, relativeEnd)
+              console.log("splitNodes", splitNodes)
+              if (splitNodes.length > 1) {
+                splitNodes[1].replace($createSuggestionDecoratorNode(suggestion, splitNodes[1].exportJSON()))
+                // splitNodes[1].setStyle("@apply border-b-2 border-red-400 border-dotted;")
+              }
               // splitNodes[1].setStyle("background-color:rgb(249, 19, 19);")
 
               // // Split the node into three parts
@@ -176,6 +196,10 @@ export function SuggestionPlugin({ suggestions, setSuggestions, onSuggestionClic
         }
       })
     })
+
+    if (setIsApplyingSuggestions) {
+      setIsApplyingSuggestions(false)
+    }
   }, [suggestions, editor])
 
   return null

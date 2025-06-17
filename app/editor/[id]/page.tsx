@@ -26,9 +26,12 @@ export default function EditorPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [lastSavedContent, setLastSavedContent] = useState<any>(null)
   const [title, setTitle] = useState("")
   const [content, setContent] = useState<any>(null)
   const [textContent, setTextContent] = useState("")
+  const [lastAnalyzedText, setLastAnalyzedText] = useState("")
+  const [isApplyingSuggestions, setIsApplyingSuggestions] = useState(false)
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [cacheHit, setCacheHit] = useState(false)
@@ -76,10 +79,11 @@ export default function EditorPage() {
 
   // Analyze text for suggestions when debounced text changes
   useEffect(() => {
-    if (debouncedTextContent && debouncedTextContent.length > 10) {
+    if (!isApplyingSuggestions && debouncedTextContent && debouncedTextContent.length > 10 && debouncedTextContent !== lastAnalyzedText) {
       analyzeText(debouncedTextContent)
     }
-  }, [debouncedTextContent])
+    setLastAnalyzedText(debouncedTextContent)
+  }, [debouncedTextContent, lastAnalyzedText, isApplyingSuggestions])
 
   const fetchDocument = async () => {
     try {
@@ -111,7 +115,9 @@ export default function EditorPage() {
 
   const saveDocument = async () => {
     if (!document || isSaving) return
-
+    if (content === lastSavedContent) {
+      return
+    }
     setIsSaving(true)
     try {
       const updates: Partial<Document> = {}
@@ -132,6 +138,7 @@ export default function EditorPage() {
 
         setDocument({ ...document, ...updates })
         setLastSaved(new Date())
+        setLastSavedContent(content)
       }
     } catch (error) {
       console.error("Error saving document:", error)
@@ -155,7 +162,7 @@ export default function EditorPage() {
         setCacheHit(true)
         return
       }
-
+      console.log("text: ", text)
       // Cache miss - call API
       const response = await fetch("/api/analyze-text", {
         method: "POST",
@@ -168,6 +175,7 @@ export default function EditorPage() {
       if (response.ok) {
         const data = await response.json()
         data.suggestions = data.suggestions.map((s: AISuggestion, idx: number) => ({ ...s, id: idx, status: "proposed" }))
+        console.log("data.suggestions", data.suggestions)
         setSuggestions(data.suggestions || [])
 
         // Cache the new suggestions if they came from API
@@ -288,6 +296,7 @@ export default function EditorPage() {
             onTextChange={handleTextChange}
             suggestions={suggestions}
             setSuggestions={setSuggestions}
+            setApplyingSuggestions={setIsApplyingSuggestions}
             onSuggestionClick={setSelectedSuggestionId}
             selectedSuggestionId={selectedSuggestionId}
           />
