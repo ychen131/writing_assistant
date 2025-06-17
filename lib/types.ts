@@ -36,3 +36,20 @@ export interface AISuggestion {
   end_index: number
   message: string
 }
+
+export interface SuggestionCache {
+  id: string
+  document_id: string
+  text_hash: string
+  text_content: string
+  suggestions: AISuggestion[]
+  created_at: string
+  expires_at: string
+}
+
+export interface CacheResult {
+  hit: boolean
+  suggestions: AISuggestion[]
+  fromCache: boolean
+  version?: string
+}

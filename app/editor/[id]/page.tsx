@@ -9,8 +9,9 @@ import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { useSuggestionCache } from "@/hooks/use-suggestion-cache"
 import type { EditorState } from "lexical"
-import { ArrowLeft, Save, CheckCircle } from "lucide-react"
+import { ArrowLeft, Save, CheckCircle, Zap, Database } from "lucide-react"
 import Link from "next/link"
 import { useDebounce } from "@/hooks/use-debounce"
 import { SuggestionsSidebar } from "@/components/editor/suggestions-sidebar"
@@ -27,6 +28,7 @@ export default function EditorPage() {
   const [textContent, setTextContent] = useState("")
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [cacheHit, setCacheHit] = useState(false)
   const [selectedSuggestionId, setSelectedSuggestionId] = useState<string | null>(null)
 
   const supabase = createClient()
@@ -34,6 +36,23 @@ export default function EditorPage() {
 
   // Debounce text content for AI analysis
   const debouncedTextContent = useDebounce(textContent, 1000)
+    // Initialize suggestion cache
+  const { getCachedSuggestions, cacheSuggestions, clearCache, getCacheStats, isCacheLoading, cacheHitRate } =
+  useSuggestionCache({
+    documentId,
+    onCacheHit: (cachedSuggestions) => {
+      console.log("Cache hit! Loaded", cachedSuggestions.length, "suggestions")
+      setCacheHit(true)
+    },
+    onCacheMiss: () => {
+      console.log("Cache miss, will call AI API")
+      setCacheHit(false)
+    },
+    onCacheError: (error) => {
+      console.error("Cache error:", error)
+    },
+  })
+
 
   useEffect(() => {
     if (documentId) {
@@ -117,18 +136,35 @@ export default function EditorPage() {
     if (isAnalyzing) return
 
     setIsAnalyzing(true)
+    setCacheHit(false)
+
     try {
+      // First check cache
+      const cacheResult = await getCachedSuggestions(text)
+
+      if (cacheResult.hit) {
+        setSuggestions(cacheResult.suggestions)
+        setCacheHit(true)
+        return
+      }
+
+      // Cache miss - call API
       const response = await fetch("/api/analyze-text", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, documentId }),
       })
 
       if (response.ok) {
         const data = await response.json()
         setSuggestions(data.suggestions || [])
+
+        // Cache the new suggestions if they came from API
+        if (!data.fromCache && data.suggestions?.length > 0) {
+          await cacheSuggestions(text, data.suggestions)
+        }
       }
     } catch (error) {
       console.error("Error analyzing text:", error)
@@ -144,6 +180,14 @@ export default function EditorPage() {
   const handleTextChange = useCallback((text: string) => {
     setTextContent(text)
   }, [])
+
+  const handleClearCache = async () => {
+    const success = await clearCache()
+    if (success) {
+      setSuggestions([])
+      console.log("Cache cleared successfully")
+    }
+  }
 
   if (isLoading) {
     return (
@@ -183,9 +227,17 @@ export default function EditorPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            {isAnalyzing && (
+          {(isAnalyzing || isCacheLoading) && (
               <Badge variant="secondary" className="animate-pulse">
-                Analyzing...
+                {isCacheLoading ? "Checking cache..." : "Analyzing..."}
+              </Badge>
+            )}
+
+            {cacheHit && (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <Database className="h-3 w-3 mr-1" />
+                Cached
+               
               </Badge>
             )}
 
@@ -194,6 +246,28 @@ export default function EditorPage() {
                 {suggestions.length} suggestion{suggestions.length !== 1 ? "s" : ""}
               </Badge>
             )}
+
+            {cacheHitRate > 0 && (
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                <Zap className="h-3 w-3 mr-1" />
+                {cacheHitRate.toFixed(0)}% cache hit
+              </Badge>
+            )}
+
+            <Button variant="outline" size="sm" onClick={handleClearCache}>
+              Clear Cache
+            </Button>
+
+            {cacheHitRate > 0 && (
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                <Zap className="h-3 w-3 mr-1" />
+                {cacheHitRate.toFixed(0)}% cache hit
+              </Badge>
+            )}
+
+            <Button variant="outline" size="sm" onClick={handleClearCache}>
+              Clear Cache
+            </Button>                        
 
             {isSaving ? (
               <Badge variant="secondary">

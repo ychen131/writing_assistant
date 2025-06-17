@@ -136,9 +136,11 @@ export function LexicalEditorComponent({
   onSuggestionClick,
   selectedSuggestionId,
 }: LexicalEditorProps) {
-  const [textContent, setTextContent] = useState("")
+  function getWordCount(text: string | undefined) {
+    return text === undefined ? 0 : text.trim().length === 0 ? 0 : text.trim().split(/\s+/).length
+  }
 
-  const wordCount = textContent.trim().length === 0 ? 0 : textContent.trim().split(/\s+/).length
+  const [wordCount, setWordCount] = useState(0)
 
   const initialConfig = {
     namespace: "MyEditor",
@@ -174,7 +176,7 @@ export function LexicalEditorComponent({
             <MyOnChangePlugin
               onChange={onChange}
               onTextChange={(text) => {
-                setTextContent(text)
+                setWordCount(getWordCount(text))
                 onTextChange?.(text)
               }}
             />
