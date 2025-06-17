@@ -21,7 +21,7 @@ import { CodeHighlightNode, CodeNode } from "@lexical/code"
 import { AutoLinkNode, LinkNode } from "@lexical/link"
 
 import { ToolbarPlugin } from "./toolbar-plugin"
-import { SuggestionPlugin } from "./suggestion-plugin"
+import { SuggestionDecoratorNode, SuggestionPlugin } from "./suggestion-plugin"
 import type { AISuggestion } from "@/lib/types"
 
 const theme = {
@@ -158,6 +158,7 @@ export function LexicalEditorComponent({
       TableRowNode,
       AutoLinkNode,
       LinkNode,
+      SuggestionDecoratorNode
     ],
     editorState: initialContent,
   }

@@ -72,6 +72,22 @@ ${text}`,
       if (!Array.isArray(suggestions)) {
         throw new Error("AI response is not an array")
       }
+      // Fix indices for each suggestion and filter out those that cannot be matched
+      suggestions = suggestions
+        .map((sugg) => {
+          if (typeof sugg.original_text === 'string' && sugg.original_text.length > 0) {
+            // Find the first occurrence of the original_text in the input text
+            const idx = text.indexOf(sugg.original_text)
+            if (idx !== -1) {
+              sugg.start_index = idx
+              sugg.end_index = idx + sugg.original_text.length
+              return sugg
+            }
+          }
+          // Return null for suggestions that cannot be matched
+          return null
+        })
+        .filter(Boolean)
     } catch (parseError) {
       console.error("Error parsing AI response:", parseError)
       return NextResponse.json({ 

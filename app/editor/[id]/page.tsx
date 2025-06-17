@@ -189,6 +189,36 @@ export default function EditorPage() {
     }
   }
 
+  const handleAcceptSuggestion = useCallback((suggestion: AISuggestion) => {
+    // Update the text content with the suggested text
+    const newText = textContent.slice(0, suggestion.start_index) + 
+                   suggestion.suggested_text + 
+                   textContent.slice(suggestion.end_index);
+    
+    // Update the text content
+    setTextContent(newText);
+    
+    // Remove the accepted suggestion from the list
+    setSuggestions(prev => prev.filter(s => 
+      s.start_index !== suggestion.start_index || 
+      s.end_index !== suggestion.end_index
+    ));
+    
+    // Clear the selected suggestion
+    setSelectedSuggestionId(null);
+  }, [textContent]);
+
+  const handleIgnoreSuggestion = useCallback((suggestion: AISuggestion) => {
+    // Remove the ignored suggestion from the list
+    setSuggestions(prev => prev.filter(s => 
+      s.start_index !== suggestion.start_index || 
+      s.end_index !== suggestion.end_index
+    ));
+    
+    // Clear the selected suggestion
+    setSelectedSuggestionId(null);
+  }, []);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white">
@@ -233,41 +263,11 @@ export default function EditorPage() {
               </Badge>
             )}
 
-            {cacheHit && (
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                <Database className="h-3 w-3 mr-1" />
-                Cached
-               
-              </Badge>
-            )}
-
             {suggestions.length > 0 && (
               <Badge variant="outline">
                 {suggestions.length} suggestion{suggestions.length !== 1 ? "s" : ""}
               </Badge>
             )}
-
-            {cacheHitRate > 0 && (
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                <Zap className="h-3 w-3 mr-1" />
-                {cacheHitRate.toFixed(0)}% cache hit
-              </Badge>
-            )}
-
-            <Button variant="outline" size="sm" onClick={handleClearCache}>
-              Clear Cache
-            </Button>
-
-            {cacheHitRate > 0 && (
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                <Zap className="h-3 w-3 mr-1" />
-                {cacheHitRate.toFixed(0)}% cache hit
-              </Badge>
-            )}
-
-            <Button variant="outline" size="sm" onClick={handleClearCache}>
-              Clear Cache
-            </Button>                        
 
             {isSaving ? (
               <Badge variant="secondary">
@@ -285,7 +285,7 @@ export default function EditorPage() {
       </div>
 
       {/* Editor */}
-      <main className="container mx-auto flex">
+      <main className="container mx-auto flex gap-4 py-4">
         <div className="max-w-4xl mx-auto flex-1">
           <LexicalEditor
             initialContent={content}
@@ -300,6 +300,8 @@ export default function EditorPage() {
           suggestions={suggestions}
           selectedId={selectedSuggestionId}
           onSelect={setSelectedSuggestionId}
+          onAccept={handleAcceptSuggestion}
+          onIgnore={handleIgnoreSuggestion}
         />
       </main>
     </div>

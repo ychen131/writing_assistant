@@ -6,48 +6,48 @@ import type { AISuggestion } from "@/lib/types"
 import { $createTextNode, $getRoot, $getSelection, $isRangeSelection, DecoratorNode, EditorConfig, LexicalNode, NodeKey, SerializedLexicalNode, TextNode, ElementNode } from "lexical"
 import type { JSX } from "react"
 
-// export class SuggestionDecoratorNode extends DecoratorNode<JSX.Element> {
-//   __suggestion: AISuggestion
+export class SuggestionDecoratorNode extends DecoratorNode<JSX.Element> {
+  __suggestion: AISuggestion
 
-//   static getType(): string {
-//     return "suggestion-decorator"
-//   }
+  static getType(): string {
+    return "suggestion-decorator"
+  }
 
-//   static clone(node: SuggestionDecoratorNode): SuggestionDecoratorNode {
-//     return new SuggestionDecoratorNode(node.__suggestion, node.__key)
-//   }
+  static clone(node: SuggestionDecoratorNode): SuggestionDecoratorNode {
+    return new SuggestionDecoratorNode(node.__suggestion, node.__key)
+  }
 
-//   constructor(suggestion: AISuggestion, key?: NodeKey) {
-//     super(key)
-//     this.__suggestion = suggestion
-//   }
+  constructor(suggestion: AISuggestion, key?: NodeKey) {
+    super(key)
+    this.__suggestion = suggestion
+  }
 
-//   createDOM(config: EditorConfig): HTMLElement {
-//     const element = document.createElement("span")
-//     element.className = `suggestion-${this.__suggestion.type}`
-//     return element
-//   }
+  createDOM(config: EditorConfig): HTMLElement {
+    const element = document.createElement("span")
+    element.className = `suggestion-${this.__suggestion.type}`
+    return element
+  }
 
-//   updateDOM(): false {
-//     return false
-//   }
+  updateDOM(): false {
+    return false
+  }
 
-//   decorate(): JSX.Element {
-//     return (
-//       <span className={`suggestion-${this.__suggestion.type}`}>
-//         {this.__suggestion.original_text}
-//       </span>
-//     )
-//   }
+  decorate(): JSX.Element {
+    return (
+      <span className={`suggestion-${this.__suggestion.type}`}>
+        {this.__suggestion.original_text}
+      </span>
+    )
+  }
 
-//   getSuggestion(): AISuggestion {
-//     return this.__suggestion
-//   }
-// }
+  getSuggestion(): AISuggestion {
+    return this.__suggestion
+  }
+}
 
-// function $createSuggestionDecoratorNode(suggestion: AISuggestion): SuggestionDecoratorNode {
-//   return new SuggestionDecoratorNode(suggestion)
-// }
+function $createSuggestionDecoratorNode(suggestion: AISuggestion): SuggestionDecoratorNode {
+  return new SuggestionDecoratorNode(suggestion)
+}
 
 interface SuggestionPluginProps {
   suggestions: AISuggestion[]
@@ -74,7 +74,11 @@ export function SuggestionPlugin({ suggestions, onSuggestionClick, selectedSugge
       const textNodes: TextNode[] = []
       const traverse = (node: LexicalNode) => {
         if (node instanceof TextNode) {
+          node.setStyle("") 
           textNodes.push(node)
+        } else if (node instanceof SuggestionDecoratorNode) {
+          const textNode = $createTextNode(node.getSuggestion().original_text)
+          textNodes.push(node.replace(textNode))
         } else if (node instanceof ElementNode) {
           node.getChildren().forEach(traverse)
         }
@@ -104,9 +108,13 @@ export function SuggestionPlugin({ suggestions, onSuggestionClick, selectedSugge
             const relativeStart = startIndex - nodeStart
             const relativeEnd = endIndex - nodeStart
 
-            console.log("splitting node", textNode, relativeStart, relativeEnd)
-            const splitNodes = textNode.splitText(relativeStart, relativeEnd)
-            console.log("splitNodes", splitNodes)
+            // console.log("splitting node", textNode, relativeStart, relativeEnd)
+            // const splitNodes = textNode.splitText(relativeStart, relativeEnd)
+            // console.log("splitNodes", splitNodes)
+            // if (splitNodes.length > 1) {
+            //   splitNodes[1].replace($createSuggestionDecoratorNode(suggestion))
+            //   // splitNodes[1].setStyle("@apply border-b-2 border-red-400 border-dotted;")
+            // }
             // splitNodes[1].setStyle("background-color:rgb(249, 19, 19);")
 
             // // Split the node into three parts
