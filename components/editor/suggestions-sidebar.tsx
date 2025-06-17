@@ -24,13 +24,16 @@ export function SuggestionsSidebar({
   const filteredSuggestions = suggestions.filter(s => s.category === selectedCategory);
 
   return (
-    <aside className="w-80 p-4 border-l bg-gray-50 h-full">
+    <aside className="w-[30rem] p-4 border-l bg-gray-50 h-full">
       <h2 className="font-bold mb-4">Suggestions</h2>
-      <div className="flex gap-2 mb-4">
-        {categories.map((cat) => (
+      <div className="flex mb-4 bg-gray-100 rounded overflow-hidden border border-gray-200">
+        {categories.map((cat, idx) => (
           <button
             key={cat}
-            className={`px-3 py-1 rounded text-sm font-semibold border ${selectedCategory === cat ? "bg-blue-600 text-white border-blue-600" : "bg-gray-200 text-gray-700 border-gray-300"}`}
+            className={`min-w-[100px] w-28 py-3 text-sm font-semibold focus:outline-none transition-colors
+              ${selectedCategory === cat ? "bg-white text-blue-700" : "bg-gray-100 text-gray-700"}
+              ${idx !== 0 ? "border-l border-gray-300" : ""}
+            `}
             onClick={() => setSelectedCategory(cat)}
           >
             {cat}
