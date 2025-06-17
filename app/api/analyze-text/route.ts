@@ -50,20 +50,7 @@ export async function POST(request: NextRequest) {
     // Use OpenAI GPT-4o-mini to analyze the text
     const { text: analysis } = await generateText({
       model: openai("gpt-4o-mini"),
-      prompt: `Analyze the following text for grammar, spelling, and style issues. Return your response as a JSON array of suggestions. Each suggestion should have the following structure:
-{
-  "type": "grammar" | "spelling" | "style",
-  "original_text": "the text that needs correction",
-  "suggested_text": "the corrected text",
-  "start_index": number (character position where the issue starts),
-  "end_index": number (character position where the issue ends),
-  "message": "explanation of the issue and why the suggestion improves it"
-}
-
-Only return the JSON array, no other text. If no issues are found, return an empty array [].
-
-Text to analyze:
-${text}`,
+      prompt: `Analyze the following text for writing issues. Return your response as a JSON array of suggestions. Each suggestion should have the following structure:\n{\n  \"type\": \"grammar\" | \"spelling\" | \"style\",\n  \"original_text\": \"the text that needs correction\",\n  \"suggested_text\": \"the corrected text\",\n  \"start_index\": number (character position where the issue starts),\n  \"end_index\": number (character position where the issue ends),\n  \"message\": \"explanation of the issue and why the suggestion improves it\",\n  \"category\": \"Correctness\" | \"Clarity\" | \"Engagement\" | \"Delivery\"\n}\n\nCategories:\n- Correctness: Spelling, grammar (verb conjugation, subject-verb agreement, punctuation, word form).\n- Clarity: Wordiness, redundancy, conciseness, ambiguity.\n  - Examples: \"due to the fact that\" → \"because\", \"true facts\" → \"facts\", \"in order to\" → \"to\", \"He saw her duck\" (ambiguous).\n- Engagement: Repetitive vocabulary, passive voice, vague language.\n  - Examples: \"nice, nice, nice\" → \"pleasant, enjoyable, delightful\", \"The ball was thrown by John\" → \"John threw the ball\", \"things\" → \"items\".\n- Delivery: Tone (mismatched for context), confidence/assertiveness.\n  - Examples: \"Hey dude,\" in a business email, \"I think it might be possible\" → \"It is possible\".\n\nAssign each suggestion to the most appropriate category. Do not use 'Other'.\n\nOnly return the JSON array, no other text. If no issues are found, return an empty array [].\n\nText to analyze:\n${text}`,
     })
 
     let suggestions = []
@@ -74,7 +61,7 @@ ${text}`,
       }
       // Fix indices for each suggestion and filter out those that cannot be matched
       suggestions = suggestions
-        .map((sugg) => {
+        .map((sugg: any) => {
           if (typeof sugg.original_text === 'string' && sugg.original_text.length > 0) {
             // Find the first occurrence of the original_text in the input text
             const idx = text.indexOf(sugg.original_text)
