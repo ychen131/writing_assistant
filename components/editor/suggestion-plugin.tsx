@@ -56,8 +56,10 @@ export class SuggestionDecoratorNode extends DecoratorNode<JSX.Element> {
     return {
       type: "suggestion-decorator",
       version: 1,
-      $: { suggestion: this.__suggestion,
-      originalNode: this.__originalNode, }
+      $: {
+        suggestion: this.__suggestion,
+        originalNode: this.__originalNode,
+      }
     }
   }
 }
@@ -68,11 +70,12 @@ function $createSuggestionDecoratorNode(suggestion: AISuggestion, originalNode: 
 
 interface SuggestionPluginProps {
   suggestions: AISuggestion[]
+  setSuggestions: (suggestions: AISuggestion[]) => void
   onSuggestionClick?: (id: string) => void
   selectedSuggestionId?: string | null
 }
 
-export function SuggestionPlugin({ suggestions, onSuggestionClick, selectedSuggestionId }: SuggestionPluginProps) {
+export function SuggestionPlugin({ suggestions, setSuggestions, onSuggestionClick, selectedSuggestionId }: SuggestionPluginProps) {
   const [editor] = useLexicalComposerContext()
 
   useEffect(() => {
@@ -82,28 +85,31 @@ export function SuggestionPlugin({ suggestions, onSuggestionClick, selectedSugge
 
     editor.update(() => {
       const root = $getRoot()
-      
+
       // First, remove any existing suggestion decorators
       // const decorators = root.getChildren().filter((node) => node instanceof SuggestionDecoratorNode)
       // decorators.forEach((node) => node.remove())
 
       // Get all text nodes in the editor
-        const textNodes: TextNode[] = []
-        const traverse = (node: LexicalNode) => {
-          if (node instanceof TextNode) {
-            node.setStyle("") 
-            textNodes.push(node)
-          } else if (node instanceof SuggestionDecoratorNode) {
-            const textNode = $createTextNode(node.getSuggestion().original_text)
-            textNodes.push(node.replace(textNode))
-          } else if (node instanceof ElementNode) {
-            node.getChildren().forEach(traverse)
-          }
+      const textNodes: TextNode[] = []
+      const traverse = (node: LexicalNode) => {
+        if (node instanceof TextNode) {
+          node.setStyle("")
+          textNodes.push(node)
+        } else if (node instanceof SuggestionDecoratorNode) {
+          const textNode = $createTextNode(node.getSuggestion().original_text)
+          textNodes.push(node.replace(textNode))
+        } else if (node instanceof ElementNode) {
+          node.getChildren().forEach(traverse)
         }
-        root.getChildren().forEach(traverse)
+      }
+      root.getChildren().forEach(traverse)
 
       // Process each suggestion
       suggestions.forEach((suggestion) => {
+        if (suggestion.status === "ignored") {
+          return;
+        }
         const startIndex = suggestion.start_index
         const endIndex = suggestion.end_index
         let found = false
@@ -118,37 +124,44 @@ export function SuggestionPlugin({ suggestions, onSuggestionClick, selectedSugge
           const nodeText = textNode.getTextContent()
 
           // Check if this node contains the suggestion
-          if (startIndex >= nodeStart || endIndex <= nodeEnd) {
+          if (startIndex >= nodeStart && endIndex <= nodeEnd) {
             console.log("found suggestion in range", nodeStart, nodeEnd);
             found = true;
-            // Calculate the relative positions within this node
-            const relativeStart = startIndex - nodeStart
-            const relativeEnd = endIndex - nodeStart + 1
 
-            console.log("splitting node", textNode, relativeStart, relativeEnd)
-            // const splitNodes = textNode.splitText(relativeStart, relativeEnd)
-            // console.log("splitNodes", splitNodes)
-            // if (splitNodes.length > 1) {
-            //   splitNodes[1].replace($createSuggestionDecoratorNode(suggestion, splitNodes[1].exportJSON()))
-            //   // splitNodes[1].setStyle("@apply border-b-2 border-red-400 border-dotted;")
-            // }
-            // splitNodes[1].setStyle("background-color:rgb(249, 19, 19);")
+            if (suggestion.status === "accepted") {
+              // Replace the original text with the suggested text
+              textNode.setTextContent(textNode.getTextContent().replace(suggestion.original_text, suggestion.suggested_text))
+            } else if (suggestion.status === "proposed") {
 
-            // // Split the node into three parts
-            // const beforeText = nodeText.slice(0, relativeStart)
-            // const suggestionText = nodeText.slice(relativeStart, relativeEnd)
-            // const afterText = nodeText.slice(relativeEnd)
+              // Calculate the relative positions within this node
+              const relativeStart = startIndex - nodeStart
+              const relativeEnd = endIndex - nodeStart + 1
 
-            // // Create new nodes
-            // const beforeNode = $createTextNode(beforeText)
-            // const afterNode = $createTextNode(afterText)
-            // const decoratorNode = $createTextNode(suggestion.original_text)
-            // decoratorNode.setStyle("background-color: #f0f0f0;")
+              console.log("splitting node", textNode, relativeStart, relativeEnd)
+              // const splitNodes = textNode.splitText(relativeStart, relativeEnd)
+              // console.log("splitNodes", splitNodes)
+              // if (splitNodes.length > 1) {
+              //   splitNodes[1].replace($createSuggestionDecoratorNode(suggestion, splitNodes[1].exportJSON()))
+              //   // splitNodes[1].setStyle("@apply border-b-2 border-red-400 border-dotted;")
+              // }
+              // splitNodes[1].setStyle("background-color:rgb(249, 19, 19);")
 
-            // // Replace the original node with the three new nodes
-            // textNode.replace(beforeNode)
-            // beforeNode.insertAfter(decoratorNode)
-            // decoratorNode.insertAfter(afterNode)
+              // // Split the node into three parts
+              // const beforeText = nodeText.slice(0, relativeStart)
+              // const suggestionText = nodeText.slice(relativeStart, relativeEnd)
+              // const afterText = nodeText.slice(relativeEnd)
+
+              // // Create new nodes
+              // const beforeNode = $createTextNode(beforeText)
+              // const afterNode = $createTextNode(afterText)
+              // const decoratorNode = $createTextNode(suggestion.original_text)
+              // decoratorNode.setStyle("background-color: #f0f0f0;")
+
+              // // Replace the original node with the three new nodes
+              // textNode.replace(beforeNode)
+              // beforeNode.insertAfter(decoratorNode)
+              // decoratorNode.insertAfter(afterNode)
+            }
 
             break // Move to next suggestion
           } else {
@@ -157,6 +170,9 @@ export function SuggestionPlugin({ suggestions, onSuggestionClick, selectedSugge
         }
         if (!found) {
           console.log("no matching text node found", suggestion)
+          if(suggestion.status === "accepted") {
+            setSuggestions(suggestions.map((s: AISuggestion) => s.id === suggestion.id ? { ...s, status: "proposed" } : s))
+          }
         }
       })
     })

@@ -29,6 +29,7 @@ export interface Suggestion {
 }
 
 export interface AISuggestion {
+  id: number
   type: "grammar" | "spelling" | "style"
   original_text: string
   suggested_text: string
@@ -36,6 +37,7 @@ export interface AISuggestion {
   end_index: number
   message: string
   category: string
+  status: "proposed" | "accepted" | "ignored"
 }
 
 export interface SuggestionCache {

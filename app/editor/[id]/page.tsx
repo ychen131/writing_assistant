@@ -167,6 +167,7 @@ export default function EditorPage() {
 
       if (response.ok) {
         const data = await response.json()
+        data.suggestions = data.suggestions.map((s: AISuggestion, idx: number) => ({ ...s, id: idx, status: "proposed" }))
         setSuggestions(data.suggestions || [])
 
         // Cache the new suggestions if they came from API
@@ -198,42 +199,16 @@ export default function EditorPage() {
   }
 
 
-  const handleAcceptSuggestion = useCallback((suggestion: AISuggestion) => {
-    // TODO
-    // editor.update(() => {
-    //   const root = $getRoot()
-    //   let currentIndex = 0
-    //   for (const node of root.getAllTextNodes()) {
-    //     const nodeLength = node.getTextContentSize()
-    //     const nodeStart = currentIndex
-    //     const nodeEnd = nodeStart + nodeLength
-    //     // If the suggestion is within this node
-    //     if (
-    //       suggestion.start_index >= nodeStart &&
-    //       suggestion.end_index <= nodeEnd
-    //     ) {
-    //       const relStart = suggestion.start_index - nodeStart
-    //       const relEnd = suggestion.end_index - nodeStart
-    //       // Split and replace
-    //       node.setTextContent(node.getTextContent().replace(suggestion.original_text, suggestion.suggested_text))
-    //       // const [before, after] = node.splitText(relStart, relEnd)
-    //       // const newNode = $createTextNode(suggestion.suggested_text)
-    //       // before.insertAfter(newNode)
-    //       // newNode.insertAfter(after)
-    //       break
-    //     }
-    //     currentIndex = nodeEnd
-    //   }
-    // })
-    // Optionally update textContent and suggestions state as before
+  const handleAcceptSuggestion = useCallback((index: number) => {
+      // Remove the ignored suggestion from the list
+      setSuggestions(prev => prev.map((s, i) => i === index ? { ...s, status: "accepted" } : s));
+      // TODO: update the editor with the new suggestion
+      setSelectedSuggestionId(null);
   }, [])
 
-  const handleIgnoreSuggestion = useCallback((suggestion: AISuggestion) => {
+  const handleIgnoreSuggestion = useCallback((index: number) => {
     // Remove the ignored suggestion from the list
-    setSuggestions(prev => prev.filter(s => 
-      s.start_index !== suggestion.start_index || 
-      s.end_index !== suggestion.end_index
-    ));
+    setSuggestions(prev => prev.map((s, i) => i === index ? { ...s, status: "ignored" } : s));
     
     // Clear the selected suggestion
     setSelectedSuggestionId(null);
@@ -312,6 +287,7 @@ export default function EditorPage() {
             onChange={handleEditorChange}
             onTextChange={handleTextChange}
             suggestions={suggestions}
+            setSuggestions={setSuggestions}
             onSuggestionClick={setSelectedSuggestionId}
             selectedSuggestionId={selectedSuggestionId}
           />
@@ -319,7 +295,6 @@ export default function EditorPage() {
         <SuggestionsSidebar
           suggestions={suggestions}
           selectedId={selectedSuggestionId}
-          onSelect={setSelectedSuggestionId}
           onAccept={handleAcceptSuggestion}
           onIgnore={handleIgnoreSuggestion}
         />

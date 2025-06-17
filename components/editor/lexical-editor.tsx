@@ -102,6 +102,7 @@ interface LexicalEditorProps {
   onChange?: (editorState: EditorState) => void
   onTextChange?: (text: string) => void
   suggestions?: AISuggestion[]
+  setSuggestions?: (suggestions: AISuggestion[]) => void
   onSuggestionClick?: (id: string) => void
   selectedSuggestionId?: string | null
 }
@@ -134,9 +135,9 @@ export function LexicalEditorComponent({
   onChange,
   onTextChange,
   suggestions = [],
+  setSuggestions,
   onSuggestionClick,
   selectedSuggestionId,
-  onAcceptSuggestion,
 }: LexicalEditorProps) {
   function getWordCount(text: string | undefined) {
     return text === undefined ? 0 : text.trim().length === 0 ? 0 : text.trim().split(/\s+/).length
@@ -190,6 +191,7 @@ export function LexicalEditorComponent({
             <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
             <SuggestionPlugin
               suggestions={suggestions}
+              setSuggestions={setSuggestions}
               onSuggestionClick={onSuggestionClick}
               selectedSuggestionId={selectedSuggestionId}
             />
