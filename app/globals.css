@@ -162,16 +162,20 @@
     @apply bg-gray-100 p-4 rounded-lg font-mono text-sm my-4 overflow-x-auto;
   }
 
-  /* Suggestion highlighting styles */
+  /* Suggestion highlighting styles - using background colors */
+  .suggestion-highlight {
+    @apply transition-all duration-200;
+  }
+
   .suggestion-grammar {
-    @apply border-b-2 border-orange-400 border-dotted;
+    @apply bg-blue-200;
   }
 
   .suggestion-spelling {
-    @apply border-b-2 border-red-400 border-dotted;
+    @apply bg-red-200;
   }
 
   .suggestion-style {
-    @apply border-b-2 border-blue-400 border-dotted;
+    @apply bg-orange-200;
   }
 }

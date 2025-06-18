@@ -26,8 +26,23 @@ export class SuggestionDecoratorNode extends DecoratorNode<JSX.Element> {
 
   createDOM(config: EditorConfig): HTMLElement {
     const element = document.createElement("span")
-    // element.className = `suggestion-${this.__suggestion.type}`
-    element.className = "border-b-2 border-red-400 border"
+    
+    // Apply different background colors based on suggestion type
+    const getBackgroundColor = (type: "spelling" | "grammar" | "style") => {
+      switch (type) {
+        case "spelling":
+          return "bg-red-200"
+        case "grammar":
+          return "bg-blue-200"
+        case "style":
+          return "bg-orange-200"
+        default:
+          return "bg-gray-200"
+      }
+    }
+    
+    const suggestionType = this.__suggestion.type as "spelling" | "grammar" | "style"
+    element.className = `suggestion-highlight ${getBackgroundColor(suggestionType)} px-1 rounded cursor-pointer hover:opacity-80 transition-opacity`
     return element
   }
 
