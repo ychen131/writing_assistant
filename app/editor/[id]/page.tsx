@@ -15,6 +15,8 @@ import { ArrowLeft, Save, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { useDebounce } from "@/hooks/use-debounce"
 import { SuggestionsSidebar } from "@/components/editor/suggestions-sidebar"
+import { VersionHistorySidebar } from "@/components/editor/version-history-sidebar"
+import { useDocumentVersions } from "@/hooks/use-document-versions"
 
 export default function EditorPage() {
   const params = useParams()
@@ -32,12 +34,15 @@ export default function EditorPage() {
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [selectedSuggestionId, setSelectedSuggestionId] = useState<string | null>(null)
+  const [lastVersionSave, setLastVersionSave] = useState<unknown>(null)
 
   const supabase = createClient()
   const documentId = params.id as string
 
   // Debounce text content for AI analysis
   const debouncedTextContent = useDebounce(textContent, 1000)
+  // Debounce content for version creation (10 seconds)
+  const debouncedContentForVersion = useDebounce(content, 10000)
   // Initialize suggestion cache
   const { getCachedSuggestions, cacheSuggestions } = useSuggestionCache({
     documentId,
@@ -50,6 +55,18 @@ export default function EditorPage() {
     onCacheError: (error) => {
       console.error("Cache error:", error)
     },
+  })
+
+  // Initialize version management
+  const { createVersion } = useDocumentVersions({
+    documentId,
+    onVersionCreate: () => {
+      console.log("Version created successfully")
+    },
+    onVersionRestore: (restoredContent) => {
+      setContent(restoredContent)
+      setLastVersionSave(restoredContent)
+    }
   })
 
   const fetchDocument = useCallback(async () => {
@@ -176,6 +193,17 @@ export default function EditorPage() {
     setLastAnalyzedText(debouncedTextContent)
   }, [debouncedTextContent, lastAnalyzedText, isApplyingSuggestions, analyzeText])
 
+  // Auto-save versions every 10 seconds
+  useEffect(() => {
+    if (debouncedContentForVersion && 
+        debouncedContentForVersion !== lastVersionSave && 
+        document) {
+      // Create auto-save version using the hook
+      createVersion(debouncedContentForVersion, false, 'Auto-saved version')
+      setLastVersionSave(debouncedContentForVersion)
+    }
+  }, [debouncedContentForVersion, lastVersionSave, document, createVersion])
+
   const handleEditorChange = useCallback((editorState: EditorState) => {
     setContent(editorState.toJSON())
   }, [])
@@ -198,6 +226,16 @@ export default function EditorPage() {
     // Clear the selected suggestion
     setSelectedSuggestionId(null);
   }, []);
+
+  const handleVersionRestore = useCallback((restoredContent: any) => {
+    setContent(restoredContent)
+    setLastVersionSave(restoredContent)
+  }, [])
+
+  const handleVersionCreate = useCallback(() => {
+    // Refresh the document to show updated version count
+    fetchDocument()
+  }, [fetchDocument])
 
   if (isLoading) {
     return (
@@ -283,6 +321,13 @@ export default function EditorPage() {
           selectedId={selectedSuggestionId}
           onAccept={handleAcceptSuggestion}
           onIgnore={handleIgnoreSuggestion}
+        />
+        <VersionHistorySidebar
+          documentId={documentId}
+          documentTitle={title || "Untitled Document"}
+          currentContent={content}
+          onRestore={handleVersionRestore}
+          onVersionCreate={handleVersionCreate}
         />
       </main>
     </div>
