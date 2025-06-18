@@ -67,7 +67,8 @@ export class SuggestionDecoratorNode extends DecoratorNode<JSX.Element> {
   }
 
   static importJSON(json: SerializedLexicalNode): LexicalNode {
-    const node = new SuggestionDecoratorNode((json.$ as unknown)['suggestion'] as AISuggestion, (json.$ as unknown)['originalNode'] as SerializedLexicalNode)
+    const jsonData = json.$ as { suggestion: AISuggestion; originalNode: SerializedLexicalNode }
+    const node = new SuggestionDecoratorNode(jsonData.suggestion, jsonData.originalNode)
     return node
   }
 
@@ -202,6 +203,7 @@ export function SuggestionPlugin({ suggestions, setSuggestions, setIsApplyingSug
           } else {
             console.log("not an overlap", nodeStart, nodeEnd, nodeText)
           }
+
         }
         if (!found) {
           console.log("no matching text node found", suggestion)
@@ -221,3 +223,4 @@ export function SuggestionPlugin({ suggestions, setSuggestions, setIsApplyingSug
 }
 
 // eslint-disable-next-line react-hooks/exhaustive-deps
+

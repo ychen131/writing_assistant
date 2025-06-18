@@ -36,7 +36,6 @@ export interface AISuggestion {
   start_index: number
   end_index: number
   message: string
-  category: string
   status: "proposed" | "accepted" | "ignored"
 }
 
