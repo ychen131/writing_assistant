@@ -15,7 +15,7 @@ import { ArrowLeft, Save, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { useDebounce } from "@/hooks/use-debounce"
 import { SuggestionsSidebar } from "@/components/editor/suggestions-sidebar"
-import { VersionHistorySidebar } from "@/components/editor/version-history-sidebar"
+import { VersionHistoryModal } from "@/components/editor/version-history-modal"
 import { useDocumentVersions } from "@/hooks/use-document-versions"
 
 export default function EditorPage() {
@@ -298,6 +298,14 @@ export default function EditorPage() {
                 Saved
               </Badge>
             ) : null}
+
+            <VersionHistoryModal
+              documentId={documentId}
+              documentTitle={title || "Untitled Document"}
+              currentContent={content}
+              onRestore={handleVersionRestore}
+              onVersionCreate={handleVersionCreate}
+            />
           </div>
         </div>
       </div>
@@ -321,13 +329,6 @@ export default function EditorPage() {
           selectedId={selectedSuggestionId}
           onAccept={handleAcceptSuggestion}
           onIgnore={handleIgnoreSuggestion}
-        />
-        <VersionHistorySidebar
-          documentId={documentId}
-          documentTitle={title || "Untitled Document"}
-          currentContent={content}
-          onRestore={handleVersionRestore}
-          onVersionCreate={handleVersionCreate}
         />
       </main>
     </div>
