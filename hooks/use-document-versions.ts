@@ -12,7 +12,6 @@ interface UseDocumentVersionsProps {
 
 export function useDocumentVersions({ 
   documentId, 
-  onVersionCreate, 
   onVersionRestore 
 }: UseDocumentVersionsProps) {
   const [isLoading, setIsLoading] = useState(false)
@@ -58,12 +57,11 @@ export function useDocumentVersions({
         })
 
       if (error) throw error
-      onVersionCreate?.()
       await fetchVersions()
     } catch (error) {
       console.error('Error creating version:', error)
     }
-  }, [documentId, supabase, onVersionCreate, fetchVersions])
+  }, [documentId, supabase, fetchVersions])
 
   // Restore a version
   const restoreVersion = useCallback(async (versionId: string) => {

@@ -46,7 +46,7 @@ export function VersionHistoryModal({
   documentTitle,
   currentContent,
   onRestore,
-  onVersionCreate
+
 }: VersionHistoryModalProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isCreatingSnapshot, setIsCreatingSnapshot] = useState(false)
@@ -61,7 +61,6 @@ export function VersionHistoryModal({
     deleteVersion: hookDeleteVersion
   } = useDocumentVersions({
     documentId,
-    onVersionCreate,
     onVersionRestore: onRestore
   })
 
