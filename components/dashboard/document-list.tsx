@@ -129,7 +129,7 @@ export function DocumentList() {
             <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <CardTitle className="mb-2">No documents yet</CardTitle>
             <CardDescription className="mb-4">
-              Create your first document to get started with AI-powered writing assistance.
+              Create your first document to get started with WordWise.
             </CardDescription>
             <Button onClick={createNewDocument}>
               <Plus className="h-4 w-4 mr-2" />

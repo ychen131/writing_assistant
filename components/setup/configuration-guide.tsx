@@ -30,7 +30,7 @@ OPENAI_API_KEY=your_openai_api_key`
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <FileText className="h-8 w-8 text-blue-600" />
-            <h1 className="text-3xl font-bold">AI Writing Assistant</h1>
+            <h1 className="text-3xl font-bold">WordWise</h1>
           </div>
           <p className="text-gray-600 text-lg">Let&apos;s get your writing assistant configured and ready to use!</p>
         </div>
