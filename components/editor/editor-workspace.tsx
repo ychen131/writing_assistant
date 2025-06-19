@@ -7,17 +7,20 @@ import type { AISuggestion } from "@/lib/types"
 interface EditorWorkspaceProps {
   textContent: string
   onTextChange: (text: string) => void
+  needsSync: boolean
+  setSynced: () => void
   suggestions: AISuggestion[]
   selectedSuggestionId: string | null
   onSuggestionClick: (id: string) => void
   acceptSuggestion: (index: number) => void
   ignoreSuggestion: (index: number) => void
-  setSuggestions: (suggestions: AISuggestion[]) => void
 }
 
 export function EditorWorkspace({
   textContent,
   onTextChange,
+  needsSync,
+  setSynced,
   suggestions,
   selectedSuggestionId,
   onSuggestionClick,
@@ -33,6 +36,8 @@ export function EditorWorkspace({
           onSuggestionClick={onSuggestionClick}
           selectedSuggestionId={selectedSuggestionId}
           initialText={textContent}
+          needsSync={needsSync}
+          setSynced={setSynced}
         />
       </div>
       <SuggestionsSidebar

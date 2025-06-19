@@ -2,19 +2,16 @@ import { useState, useCallback } from "react"
 import { useParams } from "next/navigation"
 import type { AISuggestion } from "@/lib/types"
 import { useSuggestionCache } from "@/hooks/use-suggestion-cache"
-import { useDebounce } from "@/hooks/use-debounce"
 
 interface UseSuggestionsReturn {
   // Suggestion state
   suggestions: AISuggestion[]
   isAnalyzing: boolean
   selectedSuggestionId: string | null
-  isApplyingSuggestions: boolean
   
   // Suggestion operations
   setSuggestions: (suggestions: AISuggestion[]) => void
   setSelectedSuggestionId: (id: string | null) => void
-  setIsApplyingSuggestions: (isApplying: boolean) => void
   acceptSuggestion: (index: number, currentText: string) => string
   ignoreSuggestion: (index: number) => void
   
@@ -30,11 +27,7 @@ export function useSuggestions(): UseSuggestionsReturn {
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [selectedSuggestionId, setSelectedSuggestionId] = useState<string | null>(null)
-  const [isApplyingSuggestions, setIsApplyingSuggestions] = useState(false)
   const [lastAnalyzedText, setLastAnalyzedText] = useState("")
-
-  // Debounced text for analysis
-  const debouncedTextContent = useDebounce("", 1000) // Will be set by triggerAnalysis
 
   // Initialize suggestion cache
   const { getCachedSuggestions, cacheSuggestions } = useSuggestionCache({
@@ -60,7 +53,16 @@ export function useSuggestions(): UseSuggestionsReturn {
       const cacheResult = await getCachedSuggestions(text)
 
       if (cacheResult.hit) {
-        setSuggestions(cacheResult.suggestions)
+        // filter out any suggestions that do not appear in the text
+        const filteredSuggestions = cacheResult.suggestions.filter((s: AISuggestion) => {
+          if(text.includes(s.original_text)) {
+            return true
+          } else {
+            console.log("suggestion not in text", s)
+            return false
+          }
+        })
+        setSuggestions(filteredSuggestions || [])
         setLastAnalyzedText(text)
         return
       }
@@ -81,7 +83,16 @@ export function useSuggestions(): UseSuggestionsReturn {
           id: idx, 
           status: "proposed" 
         }))
-        setSuggestions(data.suggestions || [])
+        // filter out any suggestions that do not appear in the text
+        const filteredSuggestions = data.suggestions.filter((s: AISuggestion) => {
+          if(text.includes(s.original_text)) {
+            return true
+          } else {
+            console.log("suggestion not in text", s)
+            return false
+          }
+        })
+        setSuggestions(filteredSuggestions || [])
         setLastAnalyzedText(text)
 
         // Cache the new suggestions if they came from API
@@ -98,20 +109,34 @@ export function useSuggestions(): UseSuggestionsReturn {
 
   // Trigger analysis
   const triggerAnalysis = useCallback((text: string) => {
-    if (!isApplyingSuggestions && text && text.length > 10 && text !== lastAnalyzedText) {
+    if (text && text.length > 10 && text !== lastAnalyzedText) {
       analyzeText(text)
     }
-  }, [isApplyingSuggestions, lastAnalyzedText, analyzeText])
+  }, [lastAnalyzedText, analyzeText])
 
   // Accept suggestion
   const acceptSuggestion = useCallback((index: number, currentText: string): string => {
     const suggestion = suggestions[index]
     if (!suggestion) return currentText
 
-    // Apply the suggestion to the text content
-    const beforeText = currentText.substring(0, suggestion.start_index)
-    const afterText = currentText.substring(suggestion.end_index)
+    // fuzzy match and find the closest match to the suggestion
+    var matches = []
+    for(let i = 0; i < currentText.length; i++) {
+      if(currentText.substring(i, i + suggestion.original_text.length) === suggestion.original_text) {
+        matches.push(i)
+      }
+    }
+    if(matches.length === 0) {
+      // console.log("no matches found for suggestion", suggestion)
+      return currentText
+    }
+
+    const closestMatch = matches.sort((a, b) => a - b)[0]
+    const beforeText = currentText.substring(0, closestMatch)
+    const afterText = currentText.substring(closestMatch + suggestion.original_text.length)
     const newText = beforeText + suggestion.suggested_text + afterText
+
+    // console.log("applied suggestion", newText)
     
     // Mark suggestion as accepted
     setSuggestions(prev => prev.map((s, i) => i === index ? { ...s, status: "accepted" } : s))
@@ -130,10 +155,8 @@ export function useSuggestions(): UseSuggestionsReturn {
     suggestions,
     isAnalyzing,
     selectedSuggestionId,
-    isApplyingSuggestions,
     setSuggestions,
     setSelectedSuggestionId,
-    setIsApplyingSuggestions,
     acceptSuggestion,
     ignoreSuggestion,
     triggerAnalysis,

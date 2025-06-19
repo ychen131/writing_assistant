@@ -10,7 +10,7 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary"
 import React, { useState, useEffect } from "react"
 
-import { SuggestionPlugin } from "./suggestion-plugin"
+import { SuggestionDecoratorNode, SuggestionPlugin } from "./suggestion-plugin"
 import type { AISuggestion } from "@/lib/types"
 
 const theme = {
@@ -26,14 +26,14 @@ function onError(error: Error) {
 
 interface LexicalEditorProps {
   initialContent?: string | null
-  initialText?: string
+  initialText: string
+  needsSync: boolean
+  setSynced: () => void
   onChange?: (editorState: EditorState) => void
   onTextChange?: (text: string) => void
-  suggestions?: AISuggestion[]
-  setSuggestions?: (suggestions: AISuggestion[]) => void
+  suggestions: AISuggestion[]
   onSuggestionClick?: (id: string) => void
   selectedSuggestionId?: string | null
-  setApplyingSuggestions?: (isApplyingSuggestions: boolean) => void
 }
 
 function MyOnChangePlugin({
@@ -44,6 +44,7 @@ function MyOnChangePlugin({
 
   return (
     <OnChangePlugin
+      ignoreSelectionChange={true}
       onChange={(editorState) => {
         onChange?.(editorState)
 
@@ -59,9 +60,14 @@ function MyOnChangePlugin({
   )
 }
 
-function TextInitializer({ initialText }: { initialText?: string }) {
+interface TextInitializerProps {
+  initialText: string
+  isInitialized: boolean
+  setInitialized: () => void
+}
+
+function TextInitializer({ initialText, isInitialized, setInitialized }: TextInitializerProps) {
   const [editor] = useLexicalComposerContext()
-  const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
     if (initialText && !isInitialized) {
@@ -80,20 +86,20 @@ function TextInitializer({ initialText }: { initialText?: string }) {
           }
         })
       })
-      setIsInitialized(true)
+      setInitialized()
     }
-  }, [initialText, editor, isInitialized])
+  }, [initialText, editor, isInitialized, setInitialized])
 
   return null
 }
 
 export function LexicalEditorComponent({
   initialText,
+  needsSync,
+  setSynced,
   onChange,
   onTextChange,
-  suggestions = [],
-  setSuggestions,
-  setApplyingSuggestions,
+  suggestions,
   onSuggestionClick,
   selectedSuggestionId,
 }: LexicalEditorProps) {
@@ -107,6 +113,7 @@ export function LexicalEditorComponent({
     namespace: "MyEditor",
     theme,
     onError,
+    nodes: [SuggestionDecoratorNode],
   }
 
   return (
@@ -119,7 +126,7 @@ export function LexicalEditorComponent({
               placeholder={<div className="editor-placeholder">Start writing your document...</div>}
               ErrorBoundary={LexicalErrorBoundary}
             />
-            <TextInitializer initialText={initialText} />
+            <TextInitializer initialText={initialText} isInitialized={!needsSync} setInitialized={setSynced} />
             <MyOnChangePlugin
               onChange={onChange}
               onTextChange={(text) => {
@@ -131,8 +138,6 @@ export function LexicalEditorComponent({
             <AutoFocusPlugin />
             <SuggestionPlugin
               suggestions={suggestions}
-              setSuggestions={setSuggestions || (() => {})}
-              setIsApplyingSuggestions={setApplyingSuggestions}
             />
           </div>
         </div>

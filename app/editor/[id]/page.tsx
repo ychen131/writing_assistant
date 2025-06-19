@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useCallback } from "react"
+import { useEffect, useCallback, useState } from "react"
 import { useParams } from "next/navigation"
 import { Header } from "@/components/layout/header"
 import { useDocumentEditor } from "@/hooks/use-document-editor"
@@ -31,14 +31,23 @@ export default function EditorPage() {
     suggestions,
     isAnalyzing,
     selectedSuggestionId,
-    isApplyingSuggestions,
     setSuggestions,
     setSelectedSuggestionId,
-    setIsApplyingSuggestions,
     acceptSuggestion,
     ignoreSuggestion,
     triggerAnalysis,
   } = useSuggestions()
+
+  triggerAnalysis(textContent);
+
+  const [needsSync, setNeedsSync] = useState(true)
+  // whenever we update textContent outside of the editor flow,
+  // we'll use needsSync to true so that we can refresh the editor
+  const setSynced = () => setNeedsSync(false) 
+  const updateTextAndSync = (newText: string) => {
+    setNeedsSync(true)
+    updateTextContent(newText)
+  }
 
   // Version management
   const { createVersion } = useDocumentVersions({
@@ -47,7 +56,9 @@ export default function EditorPage() {
       console.log("Version created successfully")
     },
     onVersionRestore: (restoredText) => {
+      setNeedsSync(true)
       updateTextContent(restoredText)
+      triggerAnalysis(restoredText)
     }
   })
 
@@ -61,18 +72,30 @@ export default function EditorPage() {
     }
   }, [debouncedContentForVersion, document, createVersion])
 
-  // Trigger analysis when text changes (debounced)
-  useEffect(() => {
-    triggerAnalysis(textContent)
-  }, [useDebounce(textContent, 1000), triggerAnalysis])
+  const [lastAcceptedSuggestion, setLastAcceptedSuggestion] = useState(textContent)
 
   // Handle suggestion acceptance
   // we need to accept the suggestion _and_ update the text content
   const handleAcceptSuggestion = useCallback((index: number) => {
     const newText = acceptSuggestion(index, textContent)
-    updateTextContent(newText)
+    setLastAcceptedSuggestion(newText)
+    updateTextAndSync(newText)
   }, [acceptSuggestion, textContent, updateTextContent])
 
+
+  const [needsAnalysis, setNeedsAnalysis] = useState(false)
+
+  const debouncedNeedsAnalysis = useDebounce(needsAnalysis, 10000)
+
+  // Trigger analysis when text changes
+  // - debounced for 10s to avoid triggering analysis on every change
+  // - only trigger if the last change was from the editor
+  useEffect(() => {
+    if(debouncedNeedsAnalysis) {
+      triggerAnalysis(textContent)
+      setNeedsAnalysis(false)
+    }
+  }, [debouncedNeedsAnalysis, textContent, triggerAnalysis])
 
 
   if (isLoading) {
@@ -107,19 +130,24 @@ export default function EditorPage() {
         // propagated through for managing document versions
         documentId={documentId}
         currentContent={textContent}
-        updateTextContent={updateTextContent}
+        updateTextContent={updateTextAndSync}
       />
 
       <EditorWorkspace
         textContent={textContent}
-        onTextChange={updateTextContent}
+        onTextChange={(text) => {
+          if(text !== lastAcceptedSuggestion) {
+            setNeedsAnalysis(true)
+          }
+          updateTextContent(text)
+        }}
         suggestions={suggestions}
         selectedSuggestionId={selectedSuggestionId}
         onSuggestionClick={setSelectedSuggestionId}
         acceptSuggestion={handleAcceptSuggestion}
         ignoreSuggestion={ignoreSuggestion}
-        setSuggestions={setSuggestions}
-        setIsApplyingSuggestions={setIsApplyingSuggestions}
+        needsSync={needsSync}
+        setSynced={setSynced}
       />
     </div>
   )
