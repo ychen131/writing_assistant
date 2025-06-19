@@ -68,17 +68,23 @@ export async function POST(request: NextRequest) {
             // Find the first occurrence of the original_text in the input text
             const idx = text.indexOf(sugg.original_text)
             if (idx !== -1) {
-              return {
-                ...sugg,
-                id: Math.random(), // Generate a temporary ID
-                status: 'proposed' as const
-              } as AISuggestion
+              // Validate that the indices match the actual text
+              const actualText = text.substring(idx, idx + sugg.original_text.length)
+              if (actualText === sugg.original_text) {
+                return {
+                  ...sugg,
+                  start_index: idx,
+                  end_index: idx + sugg.original_text.length,
+                  id: Math.random(), // Generate a temporary ID
+                  status: 'proposed' as const
+                } as AISuggestion
+              }
             }
           }
           console.warn("Suggestion cannot be matched: ", {
             suggestion: sugg,
             original_text: sugg.original_text,
-            text_sample: text.substring(sugg.start_index - 10, sugg.end_index + 10),
+            text_sample: text.substring(Math.max(0, sugg.start_index - 10), Math.min(text.length, sugg.end_index + 10)),
             index: text.indexOf(sugg.original_text)
           })
           return null

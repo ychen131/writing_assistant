@@ -1,5 +1,5 @@
 "use client"
-import { $getRoot, type EditorState } from "lexical"
+import { $getRoot, $createTextNode, $createParagraphNode, type EditorState } from "lexical"
 import { LexicalComposer } from "@lexical/react/LexicalComposer"
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin"
 import { ContentEditable } from "@lexical/react/LexicalContentEditable"
@@ -8,9 +8,9 @@ import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin"
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary"
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 
-import { SuggestionDecoratorNode, SuggestionPlugin } from "./suggestion-plugin"
+import { SuggestionPlugin } from "./suggestion-plugin"
 import type { AISuggestion } from "@/lib/types"
 
 const theme = {
@@ -25,7 +25,8 @@ function onError(error: Error) {
 }
 
 interface LexicalEditorProps {
-  initialContent?: string
+  initialContent?: string | null
+  initialText?: string
   onChange?: (editorState: EditorState) => void
   onTextChange?: (text: string) => void
   suggestions?: AISuggestion[]
@@ -58,8 +59,36 @@ function MyOnChangePlugin({
   )
 }
 
+function TextInitializer({ initialText }: { initialText?: string }) {
+  const [editor] = useLexicalComposerContext()
+  const [isInitialized, setIsInitialized] = useState(false)
+
+  useEffect(() => {
+    if (initialText && !isInitialized) {
+      editor.update(() => {
+        const root = $getRoot()
+        root.clear()
+        
+        // Split text into paragraphs and create paragraph nodes with text nodes
+        const paragraphs = initialText.split('\n')
+        paragraphs.forEach((paragraph, index) => {
+          if (paragraph.trim() || index === 0) {
+            const paragraphNode = $createParagraphNode()
+            const textNode = $createTextNode(paragraph)
+            paragraphNode.append(textNode)
+            root.append(paragraphNode)
+          }
+        })
+      })
+      setIsInitialized(true)
+    }
+  }, [initialText, editor, isInitialized])
+
+  return null
+}
+
 export function LexicalEditorComponent({
-  initialContent,
+  initialText,
   onChange,
   onTextChange,
   suggestions = [],
@@ -78,10 +107,6 @@ export function LexicalEditorComponent({
     namespace: "MyEditor",
     theme,
     onError,
-    nodes: [
-      SuggestionDecoratorNode
-    ],
-    editorState: initialContent,
   }
 
   return (
@@ -94,6 +119,7 @@ export function LexicalEditorComponent({
               placeholder={<div className="editor-placeholder">Start writing your document...</div>}
               ErrorBoundary={LexicalErrorBoundary}
             />
+            <TextInitializer initialText={initialText} />
             <MyOnChangePlugin
               onChange={onChange}
               onTextChange={(text) => {

@@ -25,16 +25,15 @@ export default function EditorPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
-  const [lastSavedContent, setLastSavedContent] = useState<unknown>(null)
+  const [lastSavedText, setLastSavedText] = useState<string>("")
   const [title, setTitle] = useState("")
-  const [content, setContent] = useState<unknown>(null)
   const [textContent, setTextContent] = useState("")
   const [lastAnalyzedText, setLastAnalyzedText] = useState("")
   const [isApplyingSuggestions, setIsApplyingSuggestions] = useState(false)
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [selectedSuggestionId, setSelectedSuggestionId] = useState<string | null>(null)
-  const [lastVersionSave, setLastVersionSave] = useState<unknown>(null)
+  const [lastVersionSave, setLastVersionSave] = useState<string>("")
 
   const supabase = createClient()
   const documentId = params.id as string
@@ -42,7 +41,8 @@ export default function EditorPage() {
   // Debounce text content for AI analysis
   const debouncedTextContent = useDebounce(textContent, 1000)
   // Debounce content for version creation (5 minutes)
-  const debouncedContentForVersion = useDebounce(content, 300000)
+  const debouncedContentForVersion = useDebounce(textContent, 300000)
+  
   // Initialize suggestion cache
   const { getCachedSuggestions, cacheSuggestions } = useSuggestionCache({
     documentId,
@@ -63,15 +63,19 @@ export default function EditorPage() {
     onVersionCreate: () => {
       console.log("Version created successfully")
     },
-    onVersionRestore: (restoredContent) => {
-      setContent(restoredContent)
-      setLastVersionSave(restoredContent)
+    onVersionRestore: (restoredText) => {
+      setTextContent(restoredText)
+      setLastVersionSave(restoredText)
     }
   })
 
   const fetchDocument = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from("documents").select("*").eq("id", documentId).single()
+      const { data, error } = await supabase
+        .from("documents")
+        .select("id, user_id, title, plain_text_content, created_at, updated_at, last_opened_at")
+        .eq("id", documentId)
+        .single()
 
       if (error) {
         if (error.code === "PGRST116") {
@@ -83,11 +87,8 @@ export default function EditorPage() {
 
       setDocument(data)
       setTitle(data.title)
-      if(data.content && typeof data.content === "string") {
-        setContent(data.content)
-      } else {
-        setContent(JSON.stringify(data.content))
-      }
+      setTextContent(data.plain_text_content || "")
+      setLastSavedText(data.plain_text_content || "")
     } catch (error) {
       console.error("Error fetching document:", error)
       router.push("/dashboard")
@@ -98,7 +99,7 @@ export default function EditorPage() {
 
   const saveDocument = useCallback(async () => {
     if (!document || isSaving) return
-    if (content === lastSavedContent) {
+    if (textContent === lastSavedText) {
       return
     }
     setIsSaving(true)
@@ -109,26 +110,29 @@ export default function EditorPage() {
         updates.title = title
       }
 
-      if (content) {
-        console.log("saving content", content)
-        updates.content = content;
+      if (textContent !== lastSavedText) {
+        console.log("saving text content:", textContent)
+        updates.plain_text_content = textContent
       }
 
       if (Object.keys(updates).length > 0) {
-        const { error } = await supabase.from("documents").update(updates).eq("id", documentId)
+        const { error } = await supabase
+          .from("documents")
+          .update(updates)
+          .eq("id", documentId)
 
         if (error) throw error
 
         setDocument({ ...document, ...updates })
         setLastSaved(new Date())
-        setLastSavedContent(content)
+        setLastSavedText(textContent)
       }
     } catch (error) {
       console.error("Error saving document:", error)
     } finally {
       setIsSaving(false)
     }
-  }, [document, isSaving, content, lastSavedContent, title, supabase, documentId])
+  }, [document, isSaving, textContent, lastSavedText, title, supabase, documentId])
 
   const analyzeText = useCallback(async (text: string) => {
     if (isAnalyzing) return
@@ -177,14 +181,14 @@ export default function EditorPage() {
   }, [documentId, fetchDocument])
 
   useEffect(() => {
-    if (document && (content || title !== document.title)) {
+    if (document && (textContent !== lastSavedText || title !== document.title)) {
       const timer = setTimeout(() => {
         saveDocument()
       }, 2000)
 
       return () => clearTimeout(timer)
     }
-  }, [content, title, document, saveDocument])
+  }, [textContent, title, document, saveDocument, lastSavedText])
 
   useEffect(() => {
     if (!isApplyingSuggestions && debouncedTextContent && debouncedTextContent.length > 10 && debouncedTextContent !== lastAnalyzedText) {
@@ -193,7 +197,7 @@ export default function EditorPage() {
     setLastAnalyzedText(debouncedTextContent)
   }, [debouncedTextContent, lastAnalyzedText, isApplyingSuggestions, analyzeText])
 
-  // Auto-save versions every 10 seconds
+  // Auto-save versions every 5 minutes
   useEffect(() => {
     if (debouncedContentForVersion && 
         debouncedContentForVersion !== lastVersionSave && 
@@ -204,32 +208,37 @@ export default function EditorPage() {
     }
   }, [debouncedContentForVersion, lastVersionSave, document, createVersion])
 
-  const handleEditorChange = useCallback((editorState: EditorState) => {
-    setContent(editorState.toJSON())
-  }, [])
-
   const handleTextChange = useCallback((text: string) => {
     setTextContent(text)
   }, [])
 
   const handleAcceptSuggestion = useCallback((index: number) => {
-      // Remove the ignored suggestion from the list
-      setSuggestions(prev => prev.map((s, i) => i === index ? { ...s, status: "accepted" } : s));
-      // TODO: update the editor with the new suggestion
-      setSelectedSuggestionId(null);
-  }, [])
+    const suggestion = suggestions[index]
+    if (!suggestion) return
+
+    // Apply the suggestion to the text content
+    const beforeText = textContent.substring(0, suggestion.start_index)
+    const afterText = textContent.substring(suggestion.end_index)
+    const newText = beforeText + suggestion.suggested_text + afterText
+    
+    setTextContent(newText)
+    
+    // Mark suggestion as accepted
+    setSuggestions(prev => prev.map((s, i) => i === index ? { ...s, status: "accepted" } : s))
+    setSelectedSuggestionId(null)
+  }, [suggestions, textContent])
 
   const handleIgnoreSuggestion = useCallback((index: number) => {
-    // Remove the ignored suggestion from the list
-    setSuggestions(prev => prev.map((s, i) => i === index ? { ...s, status: "ignored" } : s));
+    // Mark the suggestion as ignored
+    setSuggestions(prev => prev.map((s, i) => i === index ? { ...s, status: "ignored" } : s))
     
     // Clear the selected suggestion
-    setSelectedSuggestionId(null);
-  }, []);
+    setSelectedSuggestionId(null)
+  }, [])
 
-  const handleVersionRestore = useCallback((restoredContent: any) => {
-    setContent(restoredContent)
-    setLastVersionSave(restoredContent)
+  const handleVersionRestore = useCallback((restoredText: string) => {
+    setTextContent(restoredText)
+    setLastVersionSave(restoredText)
   }, [])
 
   const handleVersionCreate = useCallback(() => {
@@ -302,7 +311,7 @@ export default function EditorPage() {
             <VersionHistoryModal
               documentId={documentId}
               documentTitle={title || "Untitled Document"}
-              currentContent={content}
+              currentContent={textContent}
               onRestore={handleVersionRestore}
               onVersionCreate={handleVersionCreate}
             />
@@ -314,14 +323,13 @@ export default function EditorPage() {
       <main className="container mx-auto flex gap-4 py-4">
         <div className="max-w-4xl mx-auto flex-1">
           <LexicalEditor
-            initialContent={content}
-            onChange={handleEditorChange}
             onTextChange={handleTextChange}
             suggestions={suggestions}
             setSuggestions={setSuggestions}
             setApplyingSuggestions={setIsApplyingSuggestions}
             onSuggestionClick={setSelectedSuggestionId}
             selectedSuggestionId={selectedSuggestionId}
+            initialText={textContent}
           />
         </div>
         <SuggestionsSidebar

@@ -36,8 +36,8 @@ import {
 interface VersionHistoryModalProps {
   documentId: string
   documentTitle: string
-  currentContent: any
-  onRestore?: (content: any) => void
+  currentContent: string
+  onRestore?: (content: string) => void
   onVersionCreate?: () => void
 }
 

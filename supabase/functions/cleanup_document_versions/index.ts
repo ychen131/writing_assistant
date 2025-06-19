@@ -105,13 +105,13 @@ serve(async (req) => {
       }
     )
 
-  } catch (err) {
-    console.error('Fatal error:', err)
+  } catch (error) {
+    console.error('Cleanup function error:', error)
     return new Response(
       JSON.stringify({
         status: 'error',
-        message: 'Internal server error during cleanup',
-        error: err.message
+        message: 'Internal server error',
+        error: error.message
       }),
       {
         headers: { 'Content-Type': 'application/json' },

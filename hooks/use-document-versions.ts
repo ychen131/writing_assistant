@@ -7,7 +7,7 @@ import { useDebounce } from '@/hooks/use-debounce'
 interface UseDocumentVersionsProps {
   documentId: string
   onVersionCreate?: () => void
-  onVersionRestore?: (content: any) => void
+  onVersionRestore?: (content: string) => void
 }
 
 export function useDocumentVersions({ 
@@ -39,7 +39,7 @@ export function useDocumentVersions({
   }, [documentId, supabase])
 
   // Create a new version
-  const createVersion = useCallback(async (content: any, isPinned = false, description?: string) => {
+  const createVersion = useCallback(async (plainTextContent: string, isPinned = false, description?: string) => {
     try {
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -50,7 +50,7 @@ export function useDocumentVersions({
         .from('document_versions')
         .insert({
           document_id: documentId,
-          content,
+          plain_text_content: plainTextContent,
           user_id: user.id,
           is_pinned: isPinned,
           is_auto_save: !isPinned,
@@ -70,13 +70,13 @@ export function useDocumentVersions({
     try {
       const { data, error } = await supabase
         .from('document_versions')
-        .select('content')
+        .select('plain_text_content')
         .eq('id', versionId)
         .single()
 
       if (error) throw error
       if (data) {
-        onVersionRestore?.(data.content)
+        onVersionRestore?.(data.plain_text_content)
       }
     } catch (error) {
       console.error('Error restoring version:', error)

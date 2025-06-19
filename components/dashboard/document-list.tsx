@@ -57,7 +57,8 @@ export function DocumentList() {
         .from("documents")
         .insert([{ 
           title: "Untitled Document",
-          user_id: user.id 
+          user_id: user.id,
+          plain_text_content: ""
         }])
         .select()
         .single()
