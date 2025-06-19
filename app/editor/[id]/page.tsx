@@ -41,8 +41,8 @@ export default function EditorPage() {
 
   // Debounce text content for AI analysis
   const debouncedTextContent = useDebounce(textContent, 1000)
-  // Debounce content for version creation (10 seconds)
-  const debouncedContentForVersion = useDebounce(content, 10000)
+  // Debounce content for version creation (5 minutes)
+  const debouncedContentForVersion = useDebounce(content, 300000)
   // Initialize suggestion cache
   const { getCachedSuggestions, cacheSuggestions } = useSuggestionCache({
     documentId,

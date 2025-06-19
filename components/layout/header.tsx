@@ -14,9 +14,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { LogOut, FileText } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import type { User, Session } from '@supabase/supabase-js'
 
 export function Header() {
-  const [user, setUser] = useState<unknown>(null)
+  const [user, setUser] = useState<User | null>(null)
   const supabase = createClient()
   const router = useRouter()
 
@@ -32,7 +33,7 @@ export function Header() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange((event: string, session: Session | null) => {
       setUser(session?.user ?? null)
     })
 
@@ -61,7 +62,7 @@ export function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
+                  <AvatarFallback>{getInitials(user.email || '')}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
