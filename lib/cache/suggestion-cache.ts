@@ -72,7 +72,7 @@ export class SuggestionCacheManager {
       const textHash = generateTextHash(normalizedText)
 
       // Cache in database
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000');
       const response = await fetch(`${baseUrl}/api/db`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -108,7 +108,7 @@ export class SuggestionCacheManager {
    */
   private async getCachedFromDatabase(documentId: string, textHash: string): Promise<CacheResult> {
     try {
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000');
       const response = await fetch(`${baseUrl}/api/db`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -225,7 +225,7 @@ export class SuggestionCacheManager {
    */
   async clearDocumentCache(documentId: string): Promise<boolean> {
     try {
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000');
       const response = await fetch(`${baseUrl}/api/db`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -259,7 +259,7 @@ export class SuggestionCacheManager {
    */
   async getCacheStats(documentId: string) {
     try {
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000');
       const response = await fetch(`${baseUrl}/api/db`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

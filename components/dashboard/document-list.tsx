@@ -125,7 +125,7 @@ export function DocumentList() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your documents...</p>
         </div>
       </div>
@@ -141,7 +141,7 @@ export function DocumentList() {
             {documents.length} {documents.length === 1 ? "document" : "documents"}
           </p>
         </div>
-        <Button onClick={handleOpenInspirationModal} className="flex items-center gap-2">
+        <Button onClick={handleOpenInspirationModal} className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700">
           <Plus className="h-4 w-4" />
           New Document
         </Button>
@@ -155,7 +155,7 @@ export function DocumentList() {
             <CardDescription className="mb-4">
               Create your first document to get started with WordWise.
             </CardDescription>
-            <Button onClick={handleOpenInspirationModal}>
+            <Button onClick={handleOpenInspirationModal} className="bg-green-600 text-white hover:bg-green-700">
               <Plus className="h-4 w-4 mr-2" />
               Create Your First Document
             </Button>
