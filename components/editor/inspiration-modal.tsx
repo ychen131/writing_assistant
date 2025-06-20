@@ -14,7 +14,7 @@ import { Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
-import { Lightbulb, ArrowRight, ArrowLeft, RefreshCw, AlertCircle, Loader2 } from "lucide-react"
+import { Sparkles, ArrowRight, ArrowLeft, RefreshCw, AlertCircle, Loader2 } from "lucide-react"
 
 /**
  * Type definition for inspiration angles
@@ -199,8 +199,8 @@ export function InspirationModal({
   const renderDecisionView = () => (
     <div className="space-y-6">
       <div className="text-center space-y-4">
-        <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-          <Lightbulb className="h-8 w-8 text-blue-600" />
+        <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+          <Sparkles className="h-8 w-8 text-green-600" />
         </div>
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
@@ -219,7 +219,7 @@ export function InspirationModal({
           variant="outline"
           disabled={isSubmitting}
         >
-          <Lightbulb className="h-5 w-5 mr-3 text-blue-600" />
+          <Sparkles className="h-5 w-5 mr-3 text-green-600" />
           <div>
             <div className="font-medium">I need inspiration</div>
             <div className="text-sm text-gray-500">Get AI-generated writing angles</div>
@@ -279,8 +279,8 @@ export function InspirationModal({
    */
   const renderLoadingView = () => (
     <div className="space-y-6 text-center py-10">
-      <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-        <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+      <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+        <Loader2 className="h-8 w-8 text-green-600 animate-spin" />
       </div>
       <div>
         <h3 className="text-lg font-semibold text-gray-900">
@@ -309,7 +309,7 @@ export function InspirationModal({
         {angles.map((angle, index) => (
           <Card
             key={index}
-            className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-blue-200 flex flex-col"
+            className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-green-200 flex flex-col"
             onClick={() => handleSelectAngle(angle)}
           >
             <CardContent className="p-6 flex-1">

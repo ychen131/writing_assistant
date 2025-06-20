@@ -56,7 +56,9 @@ export async function POST(request: NextRequest) {
 
     let suggestions: AISuggestion[] = []
     try {
-      const parsedSuggestions = JSON.parse(analysis)
+      // The AI can sometimes return the JSON wrapped in ```json ... ```, so we clean it
+      const cleanedAnalysis = analysis.replace(/```(?:json)?\s*([\s\S]*?)\s*```/g, '$1').trim()
+      const parsedSuggestions = JSON.parse(cleanedAnalysis)
       if (!Array.isArray(parsedSuggestions)) {
         throw new Error("AI response is not an array")
       }
