@@ -1,5 +1,11 @@
-import { redirect } from "next/navigation"
+import LandingHeader from '@/components/landing/LandingHeader';
+import LandingHero from '@/components/landing/LandingHero';
 
 export default function HomePage() {
-  redirect("/dashboard")
+  return (
+    <>
+      <LandingHeader />
+      <LandingHero />
+    </>
+  );
 }
