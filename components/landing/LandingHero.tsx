@@ -17,13 +17,12 @@ export default function LandingHero() {
             For Content Creators & Storytellers
           </div>
           <h1 className="text-4xl font-bold tracking-tighter text-gray-900 md:text-5xl lg:text-6xl">
-            Write with Clarity, Spark with{" "}
-            <span className="text-green-600">Creativity.</span>
+            Connect, Engage, <span className="text-green-600">Influence</span>
           </h1>
           <p className="max-w-md text-gray-600 md:text-xl">
-            WordWise is your AI-powered partner for crafting compelling content.
-            Go beyond grammar and spelling to refine your tone, find your
-            voice, and tell unforgettable stories.
+            WordWise is more than your editor—it's your creative thinking
+            partner. Click below to find your voice and craft unforgettable
+            stories.
           </p>
           <div className="flex gap-4">
             <Link href="/auth">
@@ -40,7 +39,7 @@ export default function LandingHero() {
         </div>
 
         {/* Right Column: Image */}
-        <div className="md:w-1/2">
+        <div className="flex justify-end md:w-1/2">
           <Image
             src="/trovatrip-fitz-roy-hiker.jpg"
             alt="A hiker with a backpack in a beautiful mountain landscape"
