@@ -45,6 +45,9 @@ export class SuggestionDecoratorNode extends TextNode {
       return false
     }
   
+    isInline(): true {
+      return true
+    }
   
     getSuggestion(): AISuggestion {
       return this.__suggestion

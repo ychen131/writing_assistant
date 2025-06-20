@@ -96,7 +96,7 @@ export default function EditorPage() {
       triggerAnalysis(textContent)
       setNeedsAnalysis(false)
     }
-  }, [debouncedNeedsAnalysis, textContent, triggerAnalysis])
+  }, [debouncedNeedsAnalysis, triggerAnalysis])
 
 
   if (isLoading) {

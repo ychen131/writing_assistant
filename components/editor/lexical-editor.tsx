@@ -1,5 +1,5 @@
 "use client"
-import { $getRoot, $createTextNode, $createParagraphNode, type EditorState, TextNode, $getSelection, $setSelectionFromCaretRange, $createRangeSelection, $setSelection, RangeSelection, RootNode, ParagraphNode } from "lexical"
+import { $getRoot, $createTextNode, $createParagraphNode, type EditorState, TextNode, $getSelection, $setSelectionFromCaretRange, $createRangeSelection, $setSelection, RangeSelection, RootNode, ParagraphNode, $cloneWithProperties } from "lexical"
 import { LexicalComposer } from "@lexical/react/LexicalComposer"
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin"
 import { ContentEditable } from "@lexical/react/LexicalContentEditable"
