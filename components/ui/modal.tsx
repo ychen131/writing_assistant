@@ -22,7 +22,7 @@ interface ModalProps {
   /** Function to call when the modal should close */
   onClose: () => void
   /** The title displayed in the modal header */
-  title: string
+  title?: string
   /** Optional description text */
   description?: string
   /** The content to display inside the modal */
@@ -48,10 +48,12 @@ export function Modal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className={className}>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
-        </DialogHeader>
+        {(title || description) && (
+          <DialogHeader>
+            {title && <DialogTitle>{title}</DialogTitle>}
+            {description && <DialogDescription>{description}</DialogDescription>}
+          </DialogHeader>
+        )}
         {children}
       </DialogContent>
     </Dialog>
