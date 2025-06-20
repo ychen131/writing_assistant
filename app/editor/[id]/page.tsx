@@ -40,7 +40,7 @@ export default function EditorPage() {
     acceptSuggestion,
     ignoreSuggestion,
     triggerAnalysis,
-  } = useSuggestions({ needsSync: () => setNeedsSync(true) })
+  } = useSuggestions()
 
   triggerAnalysis(textContent);
 

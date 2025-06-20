@@ -1,5 +1,5 @@
 "use client"
-import { $getRoot, $createTextNode, $createParagraphNode, type EditorState, TextNode, $getSelection, $setSelectionFromCaretRange, $createRangeSelection, $setSelection, RangeSelection } from "lexical"
+import { $getRoot, $createTextNode, $createParagraphNode, type EditorState, TextNode, $getSelection, $setSelectionFromCaretRange, $createRangeSelection, $setSelection, RangeSelection, RootNode, ParagraphNode } from "lexical"
 import { LexicalComposer } from "@lexical/react/LexicalComposer"
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin"
 import { ContentEditable } from "@lexical/react/LexicalContentEditable"
@@ -10,10 +10,12 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary"
 import React, { useState, useEffect } from "react"
 
-import { $createSuggestionDecoratorNode, SuggestionDecoratorNode } from "./suggestion-plugin"
+import { addSuggestions, removeSuggestions, } from "@/lib/suggestions"
 import type { AISuggestion } from "@/lib/types"
 import { useDebounce } from "@/hooks/use-debounce"
 import { fuzzyMatch } from "@/lib/utils"
+import { SuggestionsSidebar } from "./suggestions-sidebar"
+import { SuggestionDecoratorNode } from "./suggestions-decorator"
 
 const theme = {
   ltr: "ltr",
@@ -72,13 +74,16 @@ interface TextInitializerProps {
 function TextInitializer({ initialText, isInitialized, setInitialized, suggestions }: TextInitializerProps) {
   const [editor] = useLexicalComposerContext()
 
+  const [processedSuggestions, setProcessedSuggestions] = useState<Set<AISuggestion>>(new Set<AISuggestion>());
+
   useEffect(() => {
+    // if we're not initialized, we'll refresh the entire view
     if (initialText && !isInitialized) {
 
       // TODO: 
       // - handle initial text XOR suggestions
       // - ignore suggestions if the text was updated since the last sync
-      
+
       editor.update(() => {
         const root = $getRoot()
         root.clear();
@@ -93,104 +98,55 @@ function TextInitializer({ initialText, isInitialized, setInitialized, suggestio
           return
         }
 
-
-        let paragraphStart = 0;
-        let paragraphEnd = 0;
-        const paragraphs = initialText.split('\n\n')
-
-        const replacementNodes = paragraphs.map((paragraph) => {
-          paragraphEnd = paragraphStart + paragraph.length
+        let paragraphTextOffset = 0;
+        let remainingSuggestions = suggestions;
+        initialText.split('\n\n').forEach((paragraph) => {
           const paragraphNode = $createParagraphNode()
-          suggestions.sort((a, b) => a.start_index - b.start_index)
-          const { result: nodes, remainingSuggestions } = splitBySuggestions(paragraph, paragraphStart, paragraphEnd, suggestions)
-          suggestions = remainingSuggestions
-          nodes.forEach((node) => {
-            paragraphNode.append(node)
-          })
-          paragraphStart = paragraphEnd + 2; // add two for the newline characters
-          return paragraphNode
+          const textNode = $createTextNode(paragraph)
+          paragraphNode.append(textNode)
+          remainingSuggestions = addSuggestions(paragraphNode, remainingSuggestions, paragraphTextOffset)
+          paragraphTextOffset += paragraph.length + 2 // add two for the "\n\n"
+          root.append(paragraphNode)
         })
-
 
         suggestions.forEach((suggestion) => {
-          console.log("suggestion not found in text:", suggestion)
+          processedSuggestions.add(suggestion)
         })
-
-
-        const numParagraphNodes = root.getChildren().length;
-        const numParagraphs = paragraphs.length;
-
-        if (numParagraphNodes != numParagraphs) {
-          console.log("paragraphs mismatch", numParagraphNodes, numParagraphs)
-          // we'll just straight up replace the root with the new nodes
-          root.clear()
-          replacementNodes.forEach((node) => {
-            root.append(node)
-          })
-        } else {
-          // we'll just replace the nodes that are different
-          const paragraphNodes = root.getChildren()
-          for (let i = 0; i < numParagraphNodes; i++) {
-            const node = paragraphNodes[i]
-            const paragraph = replacementNodes[i]
-            node.replace(paragraph)
-          }
-        }
-
-        // if (initialSelection) {
-        //   const [start, end] = initialSelection
-        //   const selection = $createRangeSelection();
-        //   selection.anchor.set(start)
-        //   $setSelection(new RangeSelection(start, end, 0, ''))
-        // }
-      }, { tag: 'collaboration' })
+        setProcessedSuggestions(processedSuggestions)
+      })
       setInitialized()
+    } else {
+
+      const newSuggestions = new Set<AISuggestion>();
+      suggestions.forEach((suggestion) => {
+        newSuggestions.add(suggestion)
+      })
+
+      const addedSuggestions = newSuggestions.difference(processedSuggestions)
+      const removedSuggestions = processedSuggestions.difference(newSuggestions)
+
+      if (addedSuggestions.size > 0 || removedSuggestions.size > 0) {
+        queueMicrotask(() => {
+          editor.update(() => {
+            console.log("suggestions added/remove -- updating", addedSuggestions, removedSuggestions)
+            const root = $getRoot()
+            let paragraphTextOffset = 0;
+            let remainingSuggestions = suggestions;
+            root.getChildren().forEach(node => {
+              if (node instanceof ParagraphNode) {
+                removeSuggestions(node)
+                remainingSuggestions = addSuggestions(node, remainingSuggestions, paragraphTextOffset)
+                paragraphTextOffset += node.getTextContent().length + 2;
+              }
+            })
+            setProcessedSuggestions(newSuggestions)
+          }, { discrete: true });
+        });
+      }
     }
-  }, [initialText, editor, isInitialized, setInitialized, suggestions])
+  }, [initialText, editor, isInitialized, setInitialized, suggestions, processedSuggestions, setProcessedSuggestions])
 
   return null
-}
-
-function splitBySuggestions(paragraph: string, paragraphStart: number, paragraphEnd: number, suggestions: AISuggestion[]) {
-  const result: (TextNode | SuggestionDecoratorNode)[] = []
-
-  // iterate through the suggestions, if the suggestion is in the paragraph, split the paragraph at the suggestion, push the current buffer as
-  // a text node, and then push the suggestion as a suggestion decorator node
-
-
-  // find all suggestions by fuzzy match
-  const matchingSuggestions: [number, AISuggestion][] = []
-
-  const remainingSuggestions = suggestions.filter((suggestion) => {
-    const match = fuzzyMatch(paragraph, suggestion.original_text, suggestion.start_index)
-    if (match !== -1) {
-      matchingSuggestions.push([match, suggestion])
-      return false
-    } else {
-      return true
-    }
-  })
-  matchingSuggestions.sort((a, b) => a[0] - b[0])
-  let lastIndex = 0;
-  matchingSuggestions.forEach(([match, suggestion]) => {
-    if (match < lastIndex) {
-      console.log("overlapping suggestion", suggestion)
-      return
-    } else {
-      result.push($createTextNode(paragraph.slice(lastIndex, match)))
-      result.push($createSuggestionDecoratorNode(suggestion))
-      lastIndex = match + suggestion.original_text.length
-    }
-  })
-  if (lastIndex < paragraphEnd) {
-    result.push($createTextNode(paragraph.slice(lastIndex, paragraphEnd)))
-  }
-  console.log("result", result, lastIndex, paragraph, paragraphStart, paragraphEnd)
-
-  return {
-    result,
-    remainingSuggestions
-  };
 }
 
 export function LexicalEditorComponent({

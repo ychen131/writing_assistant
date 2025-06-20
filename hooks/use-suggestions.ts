@@ -19,7 +19,7 @@ interface UseSuggestionsReturn {
   triggerAnalysis: (text: string) => void
 }
 
-export function useSuggestions({ needsSync }: { needsSync: () => void }): UseSuggestionsReturn {
+export function useSuggestions(): UseSuggestionsReturn {
   const params = useParams()
   const documentId = params.id as string
 
@@ -64,7 +64,6 @@ export function useSuggestions({ needsSync }: { needsSync: () => void }): UseSug
         })
         setSuggestions(filteredSuggestions || [])
         setLastAnalyzedText(text)
-        needsSync()
         return
       }
 
@@ -95,7 +94,6 @@ export function useSuggestions({ needsSync }: { needsSync: () => void }): UseSug
         })
         setSuggestions(filteredSuggestions || [])
         setLastAnalyzedText(text)
-        needsSync()
 
         // Cache the new suggestions if they came from API
         if (!data.fromCache && data.suggestions?.length > 0) {
@@ -107,7 +105,7 @@ export function useSuggestions({ needsSync }: { needsSync: () => void }): UseSug
     } finally {
       setIsAnalyzing(false)
     }
-  }, [isAnalyzing, lastAnalyzedText, getCachedSuggestions, cacheSuggestions, documentId, needsSync])
+  }, [isAnalyzing, lastAnalyzedText, getCachedSuggestions, cacheSuggestions, documentId])
 
   // Trigger analysis
   const triggerAnalysis = useCallback((text: string) => {
@@ -137,17 +135,15 @@ export function useSuggestions({ needsSync }: { needsSync: () => void }): UseSug
     // Mark suggestion as accepted
     setSuggestions(prev => prev.map((s, i) => i === index ? { ...s, status: "accepted" } : s))
     setSelectedSuggestionId(null)
-    needsSync()
     
     return newText
-  }, [suggestions, needsSync])
+  }, [suggestions])
 
   // Ignore suggestion
   const ignoreSuggestion = useCallback((index: number) => {
     setSuggestions(prev => prev.map((s, i) => i === index ? { ...s, status: "ignored" } : s))
     setSelectedSuggestionId(null)
-    needsSync()
-  }, [needsSync])
+  }, [])
 
   return {
     suggestions,
