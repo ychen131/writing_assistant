@@ -26,24 +26,25 @@ export default function EditorPage() {
     updateTextContent,
   } = useDocumentEditor()
 
+  const [needsSync, setNeedsSync] = useState(true)
+  // whenever we update textContent outside of the editor flow,
+  // we'll use needsSync to true so that we can refresh the editor
+  const setSynced = () => setNeedsSync(false) 
+
   // Suggestion management
   const {
     suggestions,
     isAnalyzing,
     selectedSuggestionId,
-    setSuggestions,
     setSelectedSuggestionId,
     acceptSuggestion,
     ignoreSuggestion,
     triggerAnalysis,
-  } = useSuggestions()
+  } = useSuggestions({ needsSync: () => setNeedsSync(true) })
 
   triggerAnalysis(textContent);
 
-  const [needsSync, setNeedsSync] = useState(true)
-  // whenever we update textContent outside of the editor flow,
-  // we'll use needsSync to true so that we can refresh the editor
-  const setSynced = () => setNeedsSync(false) 
+
   const updateTextAndSync = (newText: string) => {
     setNeedsSync(true)
     updateTextContent(newText)

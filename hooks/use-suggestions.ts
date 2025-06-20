@@ -2,6 +2,7 @@ import { useState, useCallback } from "react"
 import { useParams } from "next/navigation"
 import type { AISuggestion } from "@/lib/types"
 import { useSuggestionCache } from "@/hooks/use-suggestion-cache"
+import { fuzzyMatch } from "@/lib/utils"
 
 interface UseSuggestionsReturn {
   // Suggestion state
@@ -10,7 +11,6 @@ interface UseSuggestionsReturn {
   selectedSuggestionId: string | null
   
   // Suggestion operations
-  setSuggestions: (suggestions: AISuggestion[]) => void
   setSelectedSuggestionId: (id: string | null) => void
   acceptSuggestion: (index: number, currentText: string) => string
   ignoreSuggestion: (index: number) => void
@@ -19,7 +19,7 @@ interface UseSuggestionsReturn {
   triggerAnalysis: (text: string) => void
 }
 
-export function useSuggestions(): UseSuggestionsReturn {
+export function useSuggestions({ needsSync }: { needsSync: () => void }): UseSuggestionsReturn {
   const params = useParams()
   const documentId = params.id as string
 
@@ -64,6 +64,7 @@ export function useSuggestions(): UseSuggestionsReturn {
         })
         setSuggestions(filteredSuggestions || [])
         setLastAnalyzedText(text)
+        needsSync()
         return
       }
 
@@ -94,6 +95,7 @@ export function useSuggestions(): UseSuggestionsReturn {
         })
         setSuggestions(filteredSuggestions || [])
         setLastAnalyzedText(text)
+        needsSync()
 
         // Cache the new suggestions if they came from API
         if (!data.fromCache && data.suggestions?.length > 0) {
@@ -105,7 +107,7 @@ export function useSuggestions(): UseSuggestionsReturn {
     } finally {
       setIsAnalyzing(false)
     }
-  }, [isAnalyzing, lastAnalyzedText, getCachedSuggestions, cacheSuggestions, documentId])
+  }, [isAnalyzing, lastAnalyzedText, getCachedSuggestions, cacheSuggestions, documentId, needsSync])
 
   // Trigger analysis
   const triggerAnalysis = useCallback((text: string) => {
@@ -119,19 +121,13 @@ export function useSuggestions(): UseSuggestionsReturn {
     const suggestion = suggestions[index]
     if (!suggestion) return currentText
 
-    // fuzzy match and find the closest match to the suggestion
-    var matches = []
-    for(let i = 0; i < currentText.length; i++) {
-      if(currentText.substring(i, i + suggestion.original_text.length) === suggestion.original_text) {
-        matches.push(i)
-      }
-    }
-    if(matches.length === 0) {
-      // console.log("no matches found for suggestion", suggestion)
+
+    // const closestMatch = matches.sort((a, b) => Math.abs(a - suggestion.start_index) - Math.abs(b - suggestion.start_index))[0]
+    const closestMatch = fuzzyMatch(currentText, suggestion.original_text, suggestion.start_index)
+    if(closestMatch === -1) {
+      console.log("no match found for suggestion", suggestion)
       return currentText
     }
-
-    const closestMatch = matches.sort((a, b) => a - b)[0]
     const beforeText = currentText.substring(0, closestMatch)
     const afterText = currentText.substring(closestMatch + suggestion.original_text.length)
     const newText = beforeText + suggestion.suggested_text + afterText
@@ -141,21 +137,22 @@ export function useSuggestions(): UseSuggestionsReturn {
     // Mark suggestion as accepted
     setSuggestions(prev => prev.map((s, i) => i === index ? { ...s, status: "accepted" } : s))
     setSelectedSuggestionId(null)
+    needsSync()
     
     return newText
-  }, [suggestions])
+  }, [suggestions, needsSync])
 
   // Ignore suggestion
   const ignoreSuggestion = useCallback((index: number) => {
     setSuggestions(prev => prev.map((s, i) => i === index ? { ...s, status: "ignored" } : s))
     setSelectedSuggestionId(null)
-  }, [])
+    needsSync()
+  }, [needsSync])
 
   return {
     suggestions,
     isAnalyzing,
     selectedSuggestionId,
-    setSuggestions,
     setSelectedSuggestionId,
     acceptSuggestion,
     ignoreSuggestion,
