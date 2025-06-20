@@ -10,7 +10,7 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary"
 import React, { useState, useEffect } from "react"
 
-import { $createSuggestionDecoratorNode, SuggestionDecoratorNode, SuggestionPlugin } from "./suggestion-plugin"
+import { $createSuggestionDecoratorNode, SuggestionDecoratorNode } from "./suggestion-plugin"
 import type { AISuggestion } from "@/lib/types"
 import { useDebounce } from "@/hooks/use-debounce"
 import { fuzzyMatch } from "@/lib/utils"
