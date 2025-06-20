@@ -418,6 +418,8 @@ export function InspirationModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
+      title="I Need Inspiration"
+      hideTitle={true}
       className="sm:max-w-3xl"
     >
       {renderCurrentView()}

@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 
 /**
  * Props for the Modal component
@@ -25,6 +26,8 @@ interface ModalProps {
   title?: string
   /** Optional description text */
   description?: string
+  /** Whether to hide the title visually (still accessible to screen readers) */
+  hideTitle?: boolean
   /** The content to display inside the modal */
   children: React.ReactNode
   /** Optional CSS classes to apply to the dialog content */
@@ -42,6 +45,7 @@ export function Modal({
   onClose,
   title,
   description,
+  hideTitle = false,
   children,
   className,
 }: ModalProps) {
@@ -50,7 +54,15 @@ export function Modal({
       <DialogContent className={className}>
         {(title || description) && (
           <DialogHeader>
-            {title && <DialogTitle>{title}</DialogTitle>}
+            {title && (
+              hideTitle ? (
+                <VisuallyHidden>
+                  <DialogTitle>{title}</DialogTitle>
+                </VisuallyHidden>
+              ) : (
+                <DialogTitle>{title}</DialogTitle>
+              )
+            )}
             {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
         )}
