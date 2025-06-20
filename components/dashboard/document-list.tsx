@@ -20,6 +20,7 @@ import {
 import { FileText, Plus, MoreVertical, Pencil, Trash2, Calendar } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import Link from "next/link"
+import { InspirationModal } from "@/components/editor/inspiration-modal"
 
 export function DocumentList() {
   const [documents, setDocuments] = useState<Document[]>([])
@@ -27,6 +28,7 @@ export function DocumentList() {
   const [deleteDocument, setDeleteDocument] = useState<Document | null>(null)
   const [editingTitle, setEditingTitle] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState("")
+  const [isInspirationModalOpen, setIsInspirationModalOpen] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -98,6 +100,27 @@ export function DocumentList() {
     }
   }
 
+  /**
+   * Handles opening the inspiration modal
+   */
+  const handleOpenInspirationModal = () => {
+    setIsInspirationModalOpen(true)
+  }
+
+  /**
+   * Handles closing the inspiration modal
+   */
+  const handleCloseInspirationModal = () => {
+    setIsInspirationModalOpen(false)
+  }
+
+  /**
+   * Handles continuing without inspiration (creates blank document)
+   */
+  const handleContinueWithoutInspiration = () => {
+    createNewDocument()
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -118,7 +141,7 @@ export function DocumentList() {
             {documents.length} {documents.length === 1 ? "document" : "documents"}
           </p>
         </div>
-        <Button onClick={createNewDocument} className="flex items-center gap-2">
+        <Button onClick={handleOpenInspirationModal} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
           New Document
         </Button>
@@ -132,7 +155,7 @@ export function DocumentList() {
             <CardDescription className="mb-4">
               Create your first document to get started with WordWise.
             </CardDescription>
-            <Button onClick={createNewDocument}>
+            <Button onClick={handleOpenInspirationModal}>
               <Plus className="h-4 w-4 mr-2" />
               Create Your First Document
             </Button>
@@ -200,28 +223,31 @@ export function DocumentList() {
                   </DropdownMenu>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center text-sm text-gray-500">
+              <CardContent className="pt-0">
+                <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+                  <div className="flex items-center">
                     <Calendar className="h-4 w-4 mr-1" />
-                    Updated {formatDistanceToNow(new Date(doc.updated_at), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(doc.updated_at), { addSuffix: true })}
                   </div>
-                  <Link href={`/editor/${doc.id}`}>
-                    <Button className="w-full">Open Document</Button>
-                  </Link>
                 </div>
+                <Link href={`/editor/${doc.id}`}>
+                  <Button variant="outline" className="w-full">
+                    Open Document
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
 
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteDocument} onOpenChange={() => setDeleteDocument(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Document</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &quot;{deleteDocument?.title}"? This action cannot be undone.
+              Are you sure you want to delete "{deleteDocument?.title}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -235,6 +261,13 @@ export function DocumentList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Inspiration Modal */}
+      <InspirationModal
+        isOpen={isInspirationModalOpen}
+        onClose={handleCloseInspirationModal}
+        onContinue={handleContinueWithoutInspiration}
+      />
     </div>
   )
 }
