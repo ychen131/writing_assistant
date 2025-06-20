@@ -189,6 +189,8 @@ export function InspirationModal({
     resetModal()
   }
 
+  // --- VIEW RENDER FUNCTIONS ---
+
   /**
    * Renders the initial decision view
    */
@@ -242,47 +244,28 @@ export function InspirationModal({
    * Renders the topic input view
    */
   const renderTopicInputView = () => (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            What's on your mind?
-          </h3>
-          <p className="text-gray-600 mt-1">
-            Describe your topic in a sentence or two. We'll generate three creative angles to help you get started.
-          </p>
-        </div>
-
-        <Textarea
-          value={topic}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTopic(e.target.value)}
-          placeholder="e.g., cooking pasta, traveling to Japan, starting a morning routine..."
-          className="min-h-[100px] resize-none"
-          onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-              handleSubmitTopic()
-            }
-          }}
-        />
+    <div className="space-y-4 pt-2">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900">
+          What's on your mind?
+        </h3>
+        <p className="text-gray-600 mt-1">
+          Describe your topic in a sentence or two. We'll generate three creative angles to help you get started.
+        </p>
       </div>
 
-      <div className="flex gap-3">
-        <Button
-          onClick={handleBackToDecision}
-          variant="outline"
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Button>
-        <Button
-          onClick={handleSubmitTopic}
-          disabled={!topic.trim()}
-          className="flex-1"
-        >
-          Continue
-        </Button>
-      </div>
+      <Textarea
+        value={topic}
+        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTopic(e.target.value)}
+        placeholder="e.g., cooking pasta, traveling to Japan, starting a morning routine..."
+        className="min-h-[100px] resize-none"
+        onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+            handleSubmitTopic()
+          }
+        }}
+        autoFocus
+      />
     </div>
   )
 
@@ -335,25 +318,6 @@ export function InspirationModal({
           </Card>
         ))}
       </div>
-
-      <div className="flex gap-3">
-        <Button
-          onClick={handleBackToTopic}
-          variant="outline"
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Button>
-        <Button
-          onClick={handleRethink}
-          variant="outline"
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Rethink
-        </Button>
-      </div>
     </div>
   )
 
@@ -373,24 +337,69 @@ export function InspirationModal({
           {errorMessage || 'We couldn\'t generate inspiration angles. Please try again.'}
         </p>
       </div>
+    </div>
+  )
 
-      <div className="flex gap-3">
-        <Button
-          onClick={handleBackToTopic}
-          variant="outline"
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Button>
-        <Button
-          onClick={handleRetry}
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Retry
-        </Button>
-      </div>
+  // --- FOOTER RENDER FUNCTIONS ---
+
+  const renderTopicInputFooter = () => (
+    <div className="flex w-full gap-3">
+      <Button
+        onClick={handleBackToDecision}
+        variant="outline"
+        className="flex items-center gap-2"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back
+      </Button>
+      <Button
+        onClick={handleSubmitTopic}
+        disabled={!topic.trim()}
+        className="ml-auto"
+      >
+        Continue
+      </Button>
+    </div>
+  )
+
+  const renderDisplayAnglesFooter = () => (
+    <div className="flex w-full gap-3">
+       <Button
+        onClick={handleBackToTopic}
+        variant="outline"
+        className="flex items-center gap-2"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back
+      </Button>
+      <Button
+        onClick={handleRethink}
+        variant="outline"
+        className="flex items-center gap-2 ml-auto"
+      >
+        <RefreshCw className="h-4 w-4" />
+        Rethink
+      </Button>
+    </div>
+  )
+
+  const renderErrorFooter = () => (
+    <div className="flex w-full gap-3">
+      <Button
+        onClick={handleBackToTopic}
+        variant="outline"
+        className="flex items-center gap-2"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back
+      </Button>
+      <Button
+        onClick={handleRetry}
+        className="flex items-center gap-2 ml-auto"
+      >
+        <RefreshCw className="h-4 w-4" />
+        Retry
+      </Button>
     </div>
   )
 
@@ -414,15 +423,30 @@ export function InspirationModal({
     }
   }
 
+  /**
+   * Renders the appropriate footer based on current state
+   */
+  const renderCurrentFooter = () => {
+    switch (currentView) {
+      case 'input_topic':
+        return renderTopicInputFooter()
+      case 'display_angles':
+        return renderDisplayAnglesFooter()
+      case 'error':
+        return renderErrorFooter()
+      default:
+        return null
+    }
+  }
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="I Need Inspiration"
-      hideTitle={true}
-      className="sm:max-w-3xl"
+      className="sm:max-w-2xl"
+      footer={renderCurrentFooter()}
     >
       {renderCurrentView()}
     </Modal>
   )
-} 
+}

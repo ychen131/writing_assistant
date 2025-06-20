@@ -9,10 +9,12 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
+import { cn } from "@/lib/utils"
 
 /**
  * Props for the Modal component
@@ -26,17 +28,19 @@ interface ModalProps {
   title?: string
   /** Optional description text */
   description?: string
-  /** Whether to hide the title visually (still accessible to screen readers) */
-  hideTitle?: boolean
   /** The content to display inside the modal */
   children: React.ReactNode
+  /** Optional footer content, typically for buttons */
+  footer?: React.ReactNode
   /** Optional CSS classes to apply to the dialog content */
   className?: string
+  /** A boolean to indicate if the title should be visually hidden */
+  hideTitle?: boolean
 }
 
 /**
  * Reusable Modal component
- * 
+ *
  * @param props - The modal props
  * @returns A modal dialog component
  */
@@ -45,28 +49,29 @@ export function Modal({
   onClose,
   title,
   description,
-  hideTitle = false,
   children,
+  footer,
   className,
 }: ModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={className}>
-        {(title || description) && (
-          <DialogHeader>
-            {title && (
-              hideTitle ? (
-                <VisuallyHidden>
-                  <DialogTitle>{title}</DialogTitle>
-                </VisuallyHidden>
-              ) : (
-                <DialogTitle>{title}</DialogTitle>
-              )
-            )}
+      <DialogContent className={cn("max-h-[90vh] flex flex-col", className)}>
+        {title ? (
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle>{title}</DialogTitle>
             {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
+        ) : (
+          <VisuallyHidden>
+            <DialogTitle>Modal</DialogTitle>
+          </VisuallyHidden>
         )}
-        {children}
+        <div className="flex-1 overflow-y-auto -mx-6 px-6">{children}</div>
+        {footer && (
+          <DialogFooter className="flex-shrink-0 pt-4 border-t -mx-6 px-6">
+            {footer}
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   )
