@@ -7,11 +7,13 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import { Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Lightbulb, ArrowRight, ArrowLeft, RefreshCw, AlertCircle, Loader2 } from "lucide-react"
 
 /**
@@ -40,24 +42,6 @@ interface InspirationModalProps {
 }
 
 /**
- * Mock data for development and testing
- */
-const MOCK_ANGLES: InspirationAngle[] = [
-  {
-    angle_type: 'Personal Anecdote',
-    content: 'I remember the first time I encountered this topic. It was one of those moments that completely shifted my perspective. The experience taught me something unexpected about myself and the world around me. Looking back now, I realize how that simple encounter became a turning point in my journey.'
-  },
-  {
-    angle_type: 'Informative/Tips',
-    content: 'When it comes to this topic, there\'s one crucial tip that most people overlook: start small and build gradually. Many beginners make the mistake of diving in too deep too quickly, which often leads to overwhelm and burnout. The key is to establish a solid foundation first, then expand your horizons step by step.'
-  },
-  {
-    angle_type: 'Descriptive/Sensory',
-    content: 'The atmosphere around this topic is almost palpable - you can feel the energy in the air, hear the subtle sounds that create the perfect backdrop, and see the way light plays across surfaces. Every detail contributes to an experience that engages all your senses and leaves you with lasting memories.'
-  }
-]
-
-/**
  * Inspiration Modal component
  * 
  * @param props - The modal props
@@ -68,11 +52,60 @@ export function InspirationModal({
   onClose,
   onContinue,
 }: InspirationModalProps) {
+  // Hooks
+  const router = useRouter()
+  const supabase = createClient()
+
   // State management
   const [currentView, setCurrentView] = useState<ModalView>('decision')
   const [topic, setTopic] = useState('')
   const [angles, setAngles] = useState<InspirationAngle[]>([])
   const [errorMessage, setErrorMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  /**
+   * Fetches inspiration angles from the API
+   */
+  const fetchInspiration = async () => {
+    if (!topic.trim()) return
+
+    setIsSubmitting(true)
+    setCurrentView('loading')
+    setErrorMessage('')
+
+    try {
+      const response = await fetch('/api/inspire', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ topic }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate inspiration')
+      }
+
+      const data = await response.json()
+      setAngles(data.angles)
+      setCurrentView('display_angles')
+    } catch (error) {
+      console.error('Error fetching inspiration:', error)
+      const message = error instanceof Error ? error.message : 'An unknown error occurred.'
+      setErrorMessage(message)
+      setCurrentView('error')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  /**
+   * Handles submitting the topic, rethinking, and retrying
+   */
+  const handleSubmitTopic = () => fetchInspiration()
+  const handleRethink = () => fetchInspiration()
+  const handleRetry = () => fetchInspiration()
 
   /**
    * Handles the initial decision to get inspiration
@@ -87,21 +120,6 @@ export function InspirationModal({
   const handleContinueWithoutInspiration = () => {
     onContinue()
     resetModal()
-  }
-
-  /**
-   * Handles submitting the topic and starting the loading process
-   */
-  const handleSubmitTopic = () => {
-    if (!topic.trim()) return
-    
-    setCurrentView('loading')
-    
-    // Simulate API call with setTimeout
-    setTimeout(() => {
-      setAngles(MOCK_ANGLES)
-      setCurrentView('display_angles')
-    }, 2000)
   }
 
   /**
@@ -120,55 +138,38 @@ export function InspirationModal({
   }
 
   /**
-   * Handles the "Rethink" action to generate new angles
+   * Creates a new document with the selected angle content and navigates to the editor
    */
-  const handleRethink = () => {
-    setCurrentView('loading')
+  const handleSelectAngle = async (angle: InspirationAngle) => {
+    setIsSubmitting(true)
     
-    // Simulate new API call
-    setTimeout(() => {
-      // Generate slightly different mock data
-      const newAngles: InspirationAngle[] = [
-        {
-          angle_type: 'Personal Anecdote',
-          content: 'Another perspective on this topic came to me during a quiet moment of reflection. It reminded me of how sometimes the most profound insights come when we least expect them. This experience shaped my understanding in ways I never anticipated.'
-        },
-        {
-          angle_type: 'Informative/Tips',
-          content: 'A different approach to this topic involves focusing on the fundamentals. The most successful people in this area often share one common trait: they prioritize consistency over perfection. Small, daily actions compound into remarkable results over time.'
-        },
-        {
-          angle_type: 'Descriptive/Sensory',
-          content: 'Imagine stepping into a space where this topic comes alive. The textures, the sounds, the subtle aromas all work together to create an immersive experience. Every element has been carefully considered to transport you to a different state of mind.'
-        }
-      ]
-      setAngles(newAngles)
-      setCurrentView('display_angles')
-    }, 2000)
-  }
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Authentication failed. Please sign in again.")
 
-  /**
-   * Handles selecting an angle and closing the modal
-   */
-  const handleSelectAngle = (angle: InspirationAngle) => {
-    // TODO: In Part 3, this will navigate to editor with pre-filled content
-    console.log('Selected angle:', angle)
-    onClose()
-    resetModal()
-  }
+      const { data: newDocument, error } = await supabase
+        .from("documents")
+        .insert([{ 
+          title: topic || "Untitled Inspired Document",
+          user_id: user.id,
+          plain_text_content: angle.content
+        }])
+        .select()
+        .single()
 
-  /**
-   * Handles retry from error state
-   */
-  const handleRetry = () => {
-    setCurrentView('loading')
-    setErrorMessage('')
-    
-    // Simulate retry
-    setTimeout(() => {
-      setAngles(MOCK_ANGLES)
-      setCurrentView('display_angles')
-    }, 2000)
+      if (error) throw error
+
+      onClose()
+      resetModal()
+      router.push(`/editor/${newDocument.id}`)
+    } catch (error) {
+      console.error("Error creating document from angle:", error)
+      const message = error instanceof Error ? error.message : 'An unknown error occurred.'
+      setErrorMessage(message)
+      setCurrentView('error')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   /**
@@ -179,6 +180,7 @@ export function InspirationModal({
     setTopic('')
     setAngles([])
     setErrorMessage('')
+    setIsSubmitting(false)
   }
 
   /**
@@ -215,6 +217,7 @@ export function InspirationModal({
           onClick={handleGetInspiration}
           className="w-full justify-start h-12 text-left"
           variant="outline"
+          disabled={isSubmitting}
         >
           <Lightbulb className="h-5 w-5 mr-3 text-blue-600" />
           <div>
@@ -228,6 +231,7 @@ export function InspirationModal({
           onClick={handleContinueWithoutInspiration}
           className="w-full justify-start h-12 text-left"
           variant="outline"
+          disabled={isSubmitting}
         >
           <ArrowRight className="h-5 w-5 mr-3 text-gray-600" />
           <div>
@@ -265,6 +269,7 @@ export function InspirationModal({
           }
         }}
         autoFocus
+        disabled={isSubmitting}
       />
     </div>
   )
@@ -273,7 +278,7 @@ export function InspirationModal({
    * Renders the loading view
    */
   const renderLoadingView = () => (
-    <div className="space-y-6 text-center">
+    <div className="space-y-6 text-center py-10">
       <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
         <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
       </div>
@@ -325,7 +330,7 @@ export function InspirationModal({
    * Renders the error view
    */
   const renderErrorView = () => (
-    <div className="space-y-6 text-center">
+    <div className="space-y-6 text-center py-10">
       <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
         <AlertCircle className="h-8 w-8 text-red-600" />
       </div>
@@ -348,15 +353,17 @@ export function InspirationModal({
         onClick={handleBackToDecision}
         variant="outline"
         className="flex items-center gap-2"
+        disabled={isSubmitting}
       >
         <ArrowLeft className="h-4 w-4" />
         Back
       </Button>
       <Button
         onClick={handleSubmitTopic}
-        disabled={!topic.trim()}
+        disabled={!topic.trim() || isSubmitting}
         className="ml-auto"
       >
+        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Continue
       </Button>
     </div>
@@ -368,6 +375,7 @@ export function InspirationModal({
         onClick={handleBackToTopic}
         variant="outline"
         className="flex items-center gap-2"
+        disabled={isSubmitting}
       >
         <ArrowLeft className="h-4 w-4" />
         Back
@@ -376,8 +384,9 @@ export function InspirationModal({
         onClick={handleRethink}
         variant="outline"
         className="flex items-center gap-2 ml-auto"
+        disabled={isSubmitting}
       >
-        <RefreshCw className="h-4 w-4" />
+        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Rethink
       </Button>
     </div>
@@ -389,6 +398,7 @@ export function InspirationModal({
         onClick={handleBackToTopic}
         variant="outline"
         className="flex items-center gap-2"
+        disabled={isSubmitting}
       >
         <ArrowLeft className="h-4 w-4" />
         Back
@@ -396,8 +406,9 @@ export function InspirationModal({
       <Button
         onClick={handleRetry}
         className="flex items-center gap-2 ml-auto"
+        disabled={isSubmitting}
       >
-        <RefreshCw className="h-4 w-4" />
+        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Retry
       </Button>
     </div>
@@ -427,6 +438,9 @@ export function InspirationModal({
    * Renders the appropriate footer based on current state
    */
   const renderCurrentFooter = () => {
+    // No footer on loading and decision screens
+    if (currentView === 'loading' || currentView === 'decision') return null;
+    
     switch (currentView) {
       case 'input_topic':
         return renderTopicInputFooter()
