@@ -13,6 +13,7 @@ import React, { useState, useEffect } from "react"
 import { addSuggestions, removeSuggestions, } from "@/lib/suggestions"
 import type { AISuggestion } from "@/lib/types"
 import { SuggestionDecoratorNode } from "./suggestions-decorator"
+import { FloatingToolbarPlugin } from "./floating-toolbar-plugin"
 
 const theme = {
   ltr: "ltr",
@@ -189,6 +190,7 @@ export function LexicalEditorComponent({
             />
             <HistoryPlugin />
             <AutoFocusPlugin />
+            <FloatingToolbarPlugin />
           </div>
         </div>
         <div className="editor-word-count" style={{ textAlign: 'right', marginTop: '8px', color: '#888', fontSize: '14px' }}>
