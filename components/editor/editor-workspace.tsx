@@ -14,6 +14,7 @@ interface EditorWorkspaceProps {
   onSuggestionClick: (id: string) => void
   acceptSuggestion: (index: number) => void
   ignoreSuggestion: (index: number) => void
+  onRewrite: (originalText: string, rewrittenText: string) => void
 }
 
 export function EditorWorkspace({
@@ -26,6 +27,7 @@ export function EditorWorkspace({
   onSuggestionClick,
   acceptSuggestion,
   ignoreSuggestion,
+  onRewrite,
 }: EditorWorkspaceProps) {
   return (
     <main className="container mx-auto flex gap-4 py-4">
@@ -38,6 +40,7 @@ export function EditorWorkspace({
           initialText={textContent}
           needsSync={needsSync}
           setSynced={setSynced}
+          onRewrite={onRewrite}
         />
       </div>
       <SuggestionsSidebar

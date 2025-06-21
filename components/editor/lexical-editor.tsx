@@ -27,15 +27,15 @@ function onError(error: Error) {
 }
 
 interface LexicalEditorProps {
-  initialContent?: string | null
   initialText: string
   needsSync: boolean
   setSynced: () => void
   onChange?: (editorState: EditorState) => void
   onTextChange?: (text: string) => void
   suggestions: AISuggestion[]
-  onSuggestionClick?: (id: string) => void
+  onSuggestionClick?: (id: string | null) => void
   selectedSuggestionId?: string | null
+  onRewrite: (originalText: string, rewrittenText: string) => void
 }
 
 function MyOnChangePlugin({
@@ -75,20 +75,13 @@ function TextInitializer({ initialText, isInitialized, setInitialized, suggestio
   const [processedSuggestions, setProcessedSuggestions] = useState<Set<AISuggestion>>(new Set<AISuggestion>());
 
   useEffect(() => {
-    // if we're not initialized, we'll refresh the entire view
     if (initialText && !isInitialized) {
-
-      // TODO: 
-      // - handle initial text XOR suggestions
-      // - ignore suggestions if the text was updated since the last sync
-
       editor.update(() => {
         const root = $getRoot()
         root.clear();
-        // const initialSelection = $getSelection()?.clone()?.getStartEndPoints() ?? null;
         console.log("initialize editor state", initialText, suggestions)
 
-        if (initialText.length == 0) {
+        if (initialText.length === 0) {
           const paragraphNode = $createParagraphNode()
           const textNode = $createTextNode("")
           paragraphNode.append(textNode)
@@ -114,7 +107,6 @@ function TextInitializer({ initialText, isInitialized, setInitialized, suggestio
       })
       setInitialized()
     } else {
-
       const newSuggestions = new Set<AISuggestion>();
       suggestions.forEach((suggestion) => {
         newSuggestions.add(suggestion)
@@ -156,6 +148,7 @@ export function LexicalEditorComponent({
   suggestions,
   onSuggestionClick,
   selectedSuggestionId,
+  onRewrite,
 }: LexicalEditorProps) {
   function getWordCount(text: string | undefined) {
     return text === undefined ? 0 : text.trim().length === 0 ? 0 : text.trim().split(/\s+/).length
@@ -190,7 +183,7 @@ export function LexicalEditorComponent({
             />
             <HistoryPlugin />
             <AutoFocusPlugin />
-            <FloatingToolbarPlugin />
+            <FloatingToolbarPlugin onRewrite={onRewrite}/>
           </div>
         </div>
         <div className="editor-word-count" style={{ textAlign: 'right', marginTop: '8px', color: '#888', fontSize: '14px' }}>

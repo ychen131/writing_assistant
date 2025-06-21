@@ -24,10 +24,14 @@ interface ToolbarState {
   y: number
 }
 
+interface FloatingToolbarPluginProps {
+  onRewrite: (originalText: string, rewrittenText: string) => void;
+}
+
 /**
  * Lexical plugin that manages floating toolbar visibility and positioning
  */
-export function FloatingToolbarPlugin() {
+export function FloatingToolbarPlugin({ onRewrite }: FloatingToolbarPluginProps) {
   const [editor] = useLexicalComposerContext()
   
   const [toolbarState, setToolbarState] = useState<ToolbarState>({
@@ -73,13 +77,7 @@ export function FloatingToolbarPlugin() {
 
         const { rewrittenText } = await response.json();
 
-        // Then, insert the new text in a separate update block.
-        editor.update(() => {
-            const selection = $getSelection();
-            if ($isRangeSelection(selection)) {
-                selection.insertText(rewrittenText);
-            }
-        });
+        onRewrite(selectedText, rewrittenText);
 
         toast.success("Persona applied successfully!");
 
@@ -93,7 +91,7 @@ export function FloatingToolbarPlugin() {
         editor.setEditable(true)
         abortControllerRef.current = null
     }
-  }, [editor, isProcessing]);
+  }, [editor, isProcessing, onRewrite]);
 
   const handleCancel = useCallback(() => {
     abortControllerRef.current?.abort()

@@ -149,6 +149,10 @@ export default function EditorPage() {
         ignoreSuggestion={ignoreSuggestion}
         needsSync={needsSync}
         setSynced={setSynced}
+        onRewrite={(originalText: string, rewrittenText: string) => {
+          const newText = textContent.replace(originalText, rewrittenText);
+          updateTextAndSync(newText);
+        }}
       />
     </div>
   )
