@@ -2,14 +2,14 @@
  * Floating Toolbar Plugin
  * 
  * A Lexical plugin that manages the visibility and positioning of the floating toolbar
- * based on text selection in the editor.
+ * based on text selection in the editor. Supports both Persona and Engage features.
  */
 
 "use client"
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
-import { $getSelection, $isRangeSelection, type RangeSelection } from 'lexical'
+import { $getSelection, $isRangeSelection, $getRoot, type RangeSelection } from 'lexical'
 import { createPortal } from 'react-dom'
 import { toast } from "sonner"
 import { FloatingToolbar } from './floating-toolbar'
@@ -40,11 +40,34 @@ export function FloatingToolbarPlugin({ onRewrite }: FloatingToolbarPluginProps)
     y: 0,
   })
 
-  const [isProcessing, setIsProcessing] = useState(false)
-  const abortControllerRef = useRef<AbortController | null>(null)
+  const [isPersonaProcessing, setIsPersonaProcessing] = useState(false)
+  const [isEngageProcessing, setIsEngageProcessing] = useState(false)
+  const personaAbortControllerRef = useRef<AbortController | null>(null)
+  const engageAbortControllerRef = useRef<AbortController | null>(null)
+
+  /**
+   * Checks if the selected text represents the full document content
+   * Allows for minor differences (whitespace, newlines)
+   */
+  const isFullTextSelected = useCallback((selectedText: string): boolean => {
+    const fullText = editor.getEditorState().read(() => {
+      const root = $getRoot()
+      return root.getTextContent()
+    })
+
+    // Normalize both texts by trimming whitespace and normalizing newlines
+    const normalizedSelected = selectedText.trim().replace(/\r\n/g, '\n')
+    const normalizedFull = fullText.trim().replace(/\r\n/g, '\n')
+
+    // Allow for minor differences (up to 5% length difference)
+    const lengthDiff = Math.abs(normalizedSelected.length - normalizedFull.length)
+    const maxAllowedDiff = Math.max(normalizedFull.length * 0.05, 10) // 5% or 10 chars, whichever is larger
+
+    return lengthDiff <= maxAllowedDiff
+  }, [editor])
 
   const handlePersonaSelect = useCallback(async (persona: string) => {
-    if (isProcessing) return;
+    if (isPersonaProcessing || isEngageProcessing) return;
 
     // First, synchronously get the text from within a read block.
     const selectedText = editor.getEditorState().read(() => {
@@ -57,17 +80,17 @@ export function FloatingToolbarPlugin({ onRewrite }: FloatingToolbarPluginProps)
       return;
     }
 
-    setIsProcessing(true)
+    setIsPersonaProcessing(true)
     editor.setEditable(false)
     
-    abortControllerRef.current = new AbortController()
+    personaAbortControllerRef.current = new AbortController()
 
     try {
         const response = await fetch('/api/persona', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: selectedText, persona }),
-            signal: abortControllerRef.current.signal,
+            signal: personaAbortControllerRef.current.signal,
         });
 
         if (!response.ok) {
@@ -87,15 +110,75 @@ export function FloatingToolbarPlugin({ onRewrite }: FloatingToolbarPluginProps)
             console.error(error);
         }
     } finally {
-        setIsProcessing(false)
+        setIsPersonaProcessing(false)
         editor.setEditable(true)
-        abortControllerRef.current = null
+        personaAbortControllerRef.current = null
     }
-  }, [editor, isProcessing, onRewrite]);
+  }, [editor, isPersonaProcessing, isEngageProcessing, onRewrite]);
+
+  const handleEngage = useCallback(async () => {
+    if (isPersonaProcessing || isEngageProcessing) return;
+
+    // Get the selected text
+    const selectedText = editor.getEditorState().read(() => {
+      const selection = $getSelection();
+      return $isRangeSelection(selection) ? selection.getTextContent() : null;
+    });
+
+    if (!selectedText || selectedText.trim() === '') {
+      toast.error("Please select some text to generate engagement suggestions.");
+      return;
+    }
+
+    // Check if full text is selected
+    if (!isFullTextSelected(selectedText)) {
+      toast.error("Please select all text to use the Engage feature.");
+      return;
+    }
+
+    setIsEngageProcessing(true)
+    editor.setEditable(false)
+    
+    engageAbortControllerRef.current = new AbortController()
+
+    try {
+        const response = await fetch('/api/engage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: selectedText }),
+            signal: engageAbortControllerRef.current.signal,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || `Request failed with status ${response.status}`);
+        }
+
+        const { suggestions } = await response.json();
+
+        // For now, just log the suggestions
+        // TODO: In Prompt 2.2, we'll create the engagement suggestion components
+        console.log('Engagement suggestions received:', suggestions);
+
+        toast.success("Engagement suggestions generated successfully!");
+
+    } catch (error) {
+        if (error instanceof Error && error.name !== 'AbortError') {
+            toast.error("Failed to generate engagement suggestions. Please try again.");
+            console.error(error);
+        }
+    } finally {
+        setIsEngageProcessing(false)
+        editor.setEditable(true)
+        engageAbortControllerRef.current = null
+    }
+  }, [editor, isPersonaProcessing, isEngageProcessing, isFullTextSelected]);
 
   const handleCancel = useCallback(() => {
-    abortControllerRef.current?.abort()
-    setIsProcessing(false)
+    personaAbortControllerRef.current?.abort()
+    engageAbortControllerRef.current?.abort()
+    setIsPersonaProcessing(false)
+    setIsEngageProcessing(false)
     editor.setEditable(true)
   }, [editor]);
 
@@ -104,6 +187,14 @@ export function FloatingToolbarPlugin({ onRewrite }: FloatingToolbarPluginProps)
       const selection = $getSelection();
 
       if (!$isRangeSelection(selection) || selection.isCollapsed() || editor.getRootElement() === null) {
+        setToolbarState((prev) => ({ ...prev, isVisible: false }));
+        return;
+      }
+
+      const selectedText = selection.getTextContent();
+      
+      // Only show toolbar if full text is selected
+      if (!isFullTextSelected(selectedText)) {
         setToolbarState((prev) => ({ ...prev, isVisible: false }));
         return;
       }
@@ -127,7 +218,7 @@ export function FloatingToolbarPlugin({ onRewrite }: FloatingToolbarPluginProps)
         y: rect.top - toolbarHeight + offset, // Position above selection
       });
     });
-  }, [editor])
+  }, [editor, isFullTextSelected])
 
   const hideToolbar = useCallback(() => {
     setToolbarState(prev => ({ ...prev, isVisible: false }))
@@ -169,11 +260,16 @@ export function FloatingToolbarPlugin({ onRewrite }: FloatingToolbarPluginProps)
             transform: 'translateX(-50%)',
           }}
         >
-          <FloatingToolbar onPersonaSelect={handlePersonaSelect} />
+          <FloatingToolbar 
+            onPersonaSelect={handlePersonaSelect} 
+            onEngage={handleEngage}
+            isPersonaLoading={isPersonaProcessing}
+            isEngageLoading={isEngageProcessing}
+          />
         </div>,
         document.body
       )}
-      <ProcessingModal isOpen={isProcessing} onCancel={handleCancel} />
+      <ProcessingModal isOpen={isPersonaProcessing || isEngageProcessing} onCancel={handleCancel} />
     </>
   )
 } 
