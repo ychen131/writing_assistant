@@ -1,5 +1,5 @@
 "use client"
-import { $getRoot, $createTextNode, $createParagraphNode, type EditorState, TextNode, $getSelection, $setSelectionFromCaretRange, $createRangeSelection, $setSelection, RangeSelection, RootNode, ParagraphNode, $cloneWithProperties } from "lexical"
+import { $getRoot, $createTextNode, $createParagraphNode, type EditorState, ParagraphNode } from "lexical"
 import { LexicalComposer } from "@lexical/react/LexicalComposer"
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin"
 import { ContentEditable } from "@lexical/react/LexicalContentEditable"
@@ -12,9 +12,6 @@ import React, { useState, useEffect } from "react"
 
 import { addSuggestions, removeSuggestions, } from "@/lib/suggestions"
 import type { AISuggestion } from "@/lib/types"
-import { useDebounce } from "@/hooks/use-debounce"
-import { fuzzyMatch } from "@/lib/utils"
-import { SuggestionsSidebar } from "./suggestions-sidebar"
 import { SuggestionDecoratorNode } from "./suggestions-decorator"
 
 const theme = {
@@ -192,9 +189,6 @@ export function LexicalEditorComponent({
             />
             <HistoryPlugin />
             <AutoFocusPlugin />
-            {/* <SuggestionPlugin
-              suggestions={suggestions}
-            /> */}
           </div>
         </div>
         <div className="editor-word-count" style={{ textAlign: 'right', marginTop: '8px', color: '#888', fontSize: '14px' }}>

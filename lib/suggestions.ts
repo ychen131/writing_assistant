@@ -1,55 +1,72 @@
 "use client"
 
 import type { AISuggestion } from "@/lib/types"
-import { $createTextNode, TextNode, ParagraphNode } from "lexical"
+import { $createTextNode, TextNode, ParagraphNode, $isLineBreakNode, LineBreakNode, $isTextNode } from "lexical"
 import { fuzzyMatch } from "./utils"
 import { $createSuggestionDecoratorNode, SuggestionDecoratorNode } from "@/components/editor/suggestions-decorator"
-
 
 
 // String suggestions from the paragraph, merging all
 // nodes into a single text node.
 export function removeSuggestions(paragraph: ParagraphNode) {
-  let mergedNode = $createTextNode("")
-  // insert new empty text node at the beginning of the paragraph
-  const firstChild = paragraph.getChildAtIndex(0)
-  if (firstChild instanceof TextNode) {
-    firstChild.insertBefore(mergedNode)
-  } else {
-    paragraph.append(mergedNode)
-  }
-  // console.log("pre-merged", paragraph.getChildren())
+    let i = 0
+    while (i < paragraph.getChildrenSize()) {
+      const current = paragraph.getChildAtIndex(i)
 
-  // turn all suggestions back into text nodes
-  // and merge all text nodes into a single text node
-  while(paragraph.getChildrenSize() > 1) {
-    const paragraphLatest = paragraph.getLatest();
-    let first = paragraphLatest.getChildAtIndex(0)
-    const second = paragraphLatest.getChildAtIndex(1)
-    // console.log("merging nodes", first, second)
-    if(first instanceof SuggestionDecoratorNode) {
-      first = first.replace($createTextNode(first.getSuggestion().original_text))
-    } 
-    if(first instanceof TextNode) {
-      if (second instanceof SuggestionDecoratorNode) {
-        first.mergeWithSibling(second as TextNode)
-      } else if (second instanceof TextNode) {
-        first.mergeWithSibling(second)
-      } else {
-        console.log("unknown node", second)
-        break;
+      // Convert SuggestionDecoratorNodes to TextNodes
+      if (current instanceof SuggestionDecoratorNode) {
+        current.replace($createTextNode(current.getSuggestion().original_text))
+        // Don't increment i - the replacement might be mergeable with neighbors
+        // but re-enter the loop so we get the latest version of this node
+        continue
       }
-    } else {
-      console.log("unknown node", first)
+
+      // If current is a TextNode, try to merge with next nodes
+      if ($isTextNode(current)) {
+        let merged = true
+        while (merged && i + 1 < paragraph.getChildrenSize()) {
+          const next = paragraph.getChildAtIndex(i + 1)
+
+          if ($isTextNode(next) || next instanceof SuggestionDecoratorNode) {
+            current.mergeWithSibling(next)
+            // After merge, next node is removed, so we don't increment i
+            merged = true
+          } else {
+            // Hit a LineBreakNode or other node type - stop merging
+            merged = false
+          }
+        }
+      }
+
+      // Move to next node
+      i++
     }
   }
 
-  // console.log("post-merged", paragraph.getChildren())
-}
-// add the 
+
+
+
 export function addSuggestions(paragraph: ParagraphNode, allSuggestions: AISuggestion[], paragraphTextOffset: number): AISuggestion[] {
-  const paragraphText = paragraph.getTextContent();
   const suggestions = allSuggestions.filter(s => s.original_text.length > 0 && s.status == "proposed")
+  let textOffset = paragraphTextOffset;
+  let remainingSuggestions = suggestions;
+  paragraph.getChildren().forEach(node => {
+    if($isTextNode(node)) {
+      // this is a line -- add suggestions
+      remainingSuggestions = addSuggestionsToLine(node, remainingSuggestions, textOffset);
+      textOffset += node.getTextContentSize()
+    } else if ($isLineBreakNode(node)) {
+      // add one to account for the line break
+      textOffset += 1;
+    } else {
+      console.log("unexpected node type in paragraph: ", node)
+    }
+  })
+
+  return remainingSuggestions
+}
+export function addSuggestionsToLine(line: TextNode, suggestions: AISuggestion[], textOffset: number): AISuggestion[] {
+  const lineText = line.getTextContent();
 
   const matchingSuggestions: { start: number, end: number, suggestion: AISuggestion}[] = []
 
@@ -57,7 +74,7 @@ export function addSuggestions(paragraph: ParagraphNode, allSuggestions: AISugge
   const remainingSuggestions = suggestions.filter((suggestion) => {
     // when looking for the fuzzyMatch, we need to subtract the paragraph text offset since we're looking
     // for the index within the paragraph
-    const match = fuzzyMatch(paragraphText, suggestion.original_text, suggestion.start_index - paragraphTextOffset)
+    const match = fuzzyMatch(lineText, suggestion.original_text, suggestion.start_index - textOffset)
     if (match !== -1) {
       matchingSuggestions.push({
         start: match,
@@ -86,41 +103,26 @@ export function addSuggestions(paragraph: ParagraphNode, allSuggestions: AISugge
     }
   })
 
-  const textNodes = paragraph.getChildren();
-  
-  if(textNodes.length == 0) {
-    paragraph.append($createTextNode(""))
-  }
-  else if(textNodes.length !== 1) {
-    console.log("expected a single text node, got", textNodes)
-  }
 
-  const textNode = paragraph.getChildren()[0]
+  // console.log("splitting text node", textNode, offsets)
+  const splitNodes = line.splitText(...offsets);
+  // console.log("split nodes", splitNodes)
+  let offset = 0;
+  let nextMatch = 0;
 
-  if(textNode instanceof TextNode) {
-    // console.log("splitting text node", textNode, offsets)
-    const splitNodes = textNode.splitText(...offsets);
-    // console.log("split nodes", splitNodes)
-    let offset = 0;
-    let nextMatch = 0;
-
-    splitNodes.forEach(node => {
-      const match = matchingSuggestions[nextMatch]
-      if(match) {
-        if (match.start == offset) {
-          // console.log("matching node", match, node)
-          node.replace($createSuggestionDecoratorNode(match.suggestion))
-          nextMatch++;
-        }
-      } else {
-        // console.log("no match found for node", node)
+  splitNodes.forEach(node => {
+    const match = matchingSuggestions[nextMatch]
+    if(match) {
+      if (match.start == offset) {
+        // console.log("matching node", match, node)
+        node.replace($createSuggestionDecoratorNode(match.suggestion))
+        nextMatch++;
       }
-      offset += node.getTextContentSize()
-    })
-
-  } else {
-    console.log("unexpected node: ", textNode)
-  }
+    } else {
+      // console.log("no match found for node", node)
+    }
+    offset += node.getTextContentSize()
+  })
 
   return remainingSuggestions
 }

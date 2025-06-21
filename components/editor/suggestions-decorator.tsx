@@ -1,6 +1,5 @@
 import { AISuggestion } from "@/lib/types"
-import { DecoratorNode, NodeKey, EditorConfig, SerializedLexicalNode, LexicalNode, TextNode } from "lexical"
-import { JSX } from "react"
+import { NodeKey, EditorConfig, TextNode } from "lexical"
 
 export class SuggestionDecoratorNode extends TextNode {
     __suggestion: AISuggestion
