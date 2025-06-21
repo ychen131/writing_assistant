@@ -14,6 +14,7 @@ import { createPortal } from 'react-dom'
 import { toast } from "sonner"
 import { FloatingToolbar } from './floating-toolbar'
 import { ProcessingModal } from './processing-modal'
+import type { AISuggestion } from '@/lib/types'
 
 /**
  * Position and visibility state for the floating toolbar
@@ -26,12 +27,48 @@ interface ToolbarState {
 
 interface FloatingToolbarPluginProps {
   onRewrite: (originalText: string, rewrittenText: string) => void;
+  // Unified suggestions management
+  onAddSuggestions?: (suggestions: AISuggestion[]) => void;
+}
+
+/**
+ * Transform engagement API response to unified AISuggestion format
+ */
+function transformEngagementSuggestions(apiSuggestions: Array<{type: string, content: string}>): AISuggestion[] {
+  return apiSuggestions.map((suggestion, index) => {
+    // Map API types to our unified types
+    let unifiedType: AISuggestion['type']
+    switch (suggestion.type) {
+      case 'Question':
+        unifiedType = 'question'
+        break
+      case 'Call to Action':
+        unifiedType = 'call-to-action'
+        break
+      case 'Interactive Prompt':
+        unifiedType = 'interactive-prompt'
+        break
+      default:
+        unifiedType = 'question' // fallback
+    }
+
+    return {
+      id: Date.now() + index, // Generate unique ID
+      type: unifiedType,
+      original_text: '', // Engagement suggestions don't replace text
+      suggested_text: suggestion.content,
+      start_index: -1, // -1 indicates it should be appended to end
+      end_index: -1,
+      message: `Engagement suggestion: ${suggestion.content}`,
+      status: 'proposed' as const
+    }
+  })
 }
 
 /**
  * Lexical plugin that manages floating toolbar visibility and positioning
  */
-export function FloatingToolbarPlugin({ onRewrite }: FloatingToolbarPluginProps) {
+export function FloatingToolbarPlugin({ onRewrite, onAddSuggestions }: FloatingToolbarPluginProps) {
   const [editor] = useLexicalComposerContext()
   
   const [toolbarState, setToolbarState] = useState<ToolbarState>({
@@ -156,9 +193,13 @@ export function FloatingToolbarPlugin({ onRewrite }: FloatingToolbarPluginProps)
 
         const { suggestions } = await response.json();
 
-        // For now, just log the suggestions
-        // TODO: In Prompt 2.2, we'll create the engagement suggestion components
-        console.log('Engagement suggestions received:', suggestions);
+        // Transform engagement suggestions to unified format
+        const unifiedSuggestions = transformEngagementSuggestions(suggestions);
+        
+        // Add the suggestions to the unified suggestions state
+        if (onAddSuggestions) {
+          onAddSuggestions(unifiedSuggestions);
+        }
 
         toast.success("Engagement suggestions generated successfully!");
 
@@ -172,7 +213,7 @@ export function FloatingToolbarPlugin({ onRewrite }: FloatingToolbarPluginProps)
         editor.setEditable(true)
         engageAbortControllerRef.current = null
     }
-  }, [editor, isPersonaProcessing, isEngageProcessing, isFullTextSelected]);
+  }, [editor, isPersonaProcessing, isEngageProcessing, isFullTextSelected, onAddSuggestions]);
 
   const handleCancel = useCallback(() => {
     personaAbortControllerRef.current?.abort()

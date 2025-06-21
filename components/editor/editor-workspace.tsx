@@ -11,10 +11,13 @@ interface EditorWorkspaceProps {
   setSynced: () => void
   suggestions: AISuggestion[]
   selectedSuggestionId: string | null
-  onSuggestionClick: (id: string) => void
+  onSuggestionClick: (id: string | null) => void
   acceptSuggestion: (index: number) => void
   ignoreSuggestion: (index: number) => void
   onRewrite: (originalText: string, rewrittenText: string) => void
+  // Unified suggestions management
+  onAddSuggestions: (suggestions: AISuggestion[]) => void
+  onAddEngagementSuggestion: (suggestion: AISuggestion) => void
 }
 
 export function EditorWorkspace({
@@ -28,6 +31,8 @@ export function EditorWorkspace({
   acceptSuggestion,
   ignoreSuggestion,
   onRewrite,
+  onAddSuggestions,
+  onAddEngagementSuggestion,
 }: EditorWorkspaceProps) {
   return (
     <main className="container mx-auto flex gap-4 py-4">
@@ -41,13 +46,17 @@ export function EditorWorkspace({
           needsSync={needsSync}
           setSynced={setSynced}
           onRewrite={onRewrite}
+          onAddSuggestions={onAddSuggestions}
         />
       </div>
+      
+      {/* Unified Suggestions Sidebar */}
       <SuggestionsSidebar
         suggestions={suggestions}
         selectedId={selectedSuggestionId}
         onAccept={acceptSuggestion}
         onIgnore={ignoreSuggestion}
+        onAddEngagement={onAddEngagementSuggestion}
       />
     </main>
   )

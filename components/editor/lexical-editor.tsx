@@ -11,7 +11,7 @@ import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary"
 import React, { useState, useEffect } from "react"
 
 import { addSuggestions, removeSuggestions, } from "@/lib/suggestions"
-import type { AISuggestion } from "@/lib/types"
+import type { AISuggestion, EngagementSuggestion } from "@/lib/types"
 import { SuggestionDecoratorNode } from "./suggestions-decorator"
 import { FloatingToolbarPlugin } from "./floating-toolbar-plugin"
 
@@ -36,6 +36,7 @@ interface LexicalEditorProps {
   onSuggestionClick?: (id: string | null) => void
   selectedSuggestionId?: string | null
   onRewrite: (originalText: string, rewrittenText: string) => void
+  onAddSuggestions?: (suggestions: AISuggestion[]) => void
 }
 
 function MyOnChangePlugin({
@@ -149,6 +150,7 @@ export function LexicalEditorComponent({
   onSuggestionClick,
   selectedSuggestionId,
   onRewrite,
+  onAddSuggestions,
 }: LexicalEditorProps) {
   function getWordCount(text: string | undefined) {
     return text === undefined ? 0 : text.trim().length === 0 ? 0 : text.trim().split(/\s+/).length
@@ -183,7 +185,7 @@ export function LexicalEditorComponent({
             />
             <HistoryPlugin />
             <AutoFocusPlugin />
-            <FloatingToolbarPlugin onRewrite={onRewrite}/>
+            <FloatingToolbarPlugin onRewrite={onRewrite} onAddSuggestions={onAddSuggestions}/>
           </div>
         </div>
         <div className="editor-word-count" style={{ textAlign: 'right', marginTop: '8px', color: '#888', fontSize: '14px' }}>

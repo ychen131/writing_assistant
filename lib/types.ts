@@ -44,13 +44,13 @@ export interface Suggestion {
 
 export interface AISuggestion {
   id: number
-  type: 'grammar' | 'spelling' | 'style'
+  type: "spelling" | "grammar" | "style" | "question" | "call-to-action" | "interactive-prompt"
   original_text: string
   suggested_text: string
   start_index: number
   end_index: number
   message: string
-  status: 'proposed' | 'accepted' | 'ignored'
+  status: "proposed" | "accepted" | "ignored"
 }
 
 export interface SuggestionCacheEntry {
@@ -70,4 +70,19 @@ export interface CacheResult {
   suggestions: AISuggestion[]
   fromCache: boolean
   version?: string
+}
+
+/**
+ * Engagement suggestion types (for reference)
+ */
+export type EngagementSuggestionType = 'Question' | 'Call to Action' | 'Interactive Prompt';
+
+/**
+ * Engagement suggestion interface (deprecated - now using unified AISuggestion)
+ */
+export interface EngagementSuggestion {
+  id: string;
+  type: EngagementSuggestionType;
+  content: string;
+  timestamp: number;
 }

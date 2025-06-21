@@ -9,6 +9,7 @@ import { useDocumentVersions } from "@/hooks/use-document-versions"
 import { DocumentHeader } from "@/components/editor/document-header"
 import { EditorWorkspace } from "@/components/editor/editor-workspace"
 import { useDebounce } from "@/hooks/use-debounce"
+import type { AISuggestion } from "@/lib/types"
 
 export default function EditorPage() {
   const params = useParams()
@@ -31,7 +32,7 @@ export default function EditorPage() {
   // we'll use needsSync to true so that we can refresh the editor
   const setSynced = () => setNeedsSync(false) 
 
-  // Suggestion management
+  // Unified suggestions management
   const {
     suggestions,
     isAnalyzing,
@@ -40,10 +41,10 @@ export default function EditorPage() {
     acceptSuggestion,
     ignoreSuggestion,
     triggerAnalysis,
+    addSuggestions,
   } = useSuggestions()
 
   triggerAnalysis(textContent);
-
 
   const updateTextAndSync = (newText: string) => {
     setNeedsSync(true)
@@ -83,6 +84,25 @@ export default function EditorPage() {
     updateTextAndSync(newText)
   }, [acceptSuggestion, textContent, updateTextContent])
 
+  // Handle adding new suggestions (for engagement suggestions)
+  const handleAddSuggestions = useCallback((newSuggestions: AISuggestion[]) => {
+    addSuggestions(newSuggestions)
+  }, [addSuggestions])
+
+  // Handle engagement suggestion addition
+  const handleAddEngagementSuggestion = useCallback((suggestion: AISuggestion) => {
+    // Check if this is an engagement suggestion (has start_index: -1)
+    if (suggestion.start_index === -1) {
+      // Append to the end of the document
+      const newText = textContent + '\n\n' + suggestion.suggested_text
+      updateTextAndSync(newText)
+      
+      // Remove the suggestion from the list
+      ignoreSuggestion(suggestion.id)
+      
+      console.log('Added engagement suggestion:', suggestion.suggested_text)
+    }
+  }, [textContent, updateTextContent, ignoreSuggestion])
 
   const [needsAnalysis, setNeedsAnalysis] = useState(false)
 
@@ -97,7 +117,6 @@ export default function EditorPage() {
       setNeedsAnalysis(false)
     }
   }, [debouncedNeedsAnalysis, triggerAnalysis])
-
 
   if (isLoading) {
     return (
@@ -153,6 +172,8 @@ export default function EditorPage() {
           const newText = textContent.replace(originalText, rewrittenText);
           updateTextAndSync(newText);
         }}
+        onAddSuggestions={handleAddSuggestions}
+        onAddEngagementSuggestion={handleAddEngagementSuggestion}
       />
     </div>
   )

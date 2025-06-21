@@ -14,6 +14,7 @@ interface UseSuggestionsReturn {
   setSelectedSuggestionId: (id: string | null) => void
   acceptSuggestion: (index: number, currentText: string) => string
   ignoreSuggestion: (index: number) => void
+  addSuggestions: (newSuggestions: AISuggestion[]) => void
   
   // Analysis trigger
   triggerAnalysis: (text: string) => void
@@ -145,6 +146,11 @@ export function useSuggestions(): UseSuggestionsReturn {
     setSelectedSuggestionId(null)
   }, [])
 
+  // Add new suggestions (for engagement suggestions)
+  const addSuggestions = useCallback((newSuggestions: AISuggestion[]) => {
+    setSuggestions(prev => [...prev, ...newSuggestions])
+  }, [])
+
   return {
     suggestions,
     isAnalyzing,
@@ -152,6 +158,7 @@ export function useSuggestions(): UseSuggestionsReturn {
     setSelectedSuggestionId,
     acceptSuggestion,
     ignoreSuggestion,
+    addSuggestions,
     triggerAnalysis,
   }
 } 
