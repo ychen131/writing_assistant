@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef } from "react"
 import { useParams } from "next/navigation"
 import type { AISuggestion } from "@/lib/types"
 import { useSuggestionCache } from "@/hooks/use-suggestion-cache"
@@ -30,6 +30,11 @@ export function useSuggestions(): UseSuggestionsReturn {
   const [selectedSuggestionId, setSelectedSuggestionId] = useState<string | null>(null)
   const [lastAnalyzedText, setLastAnalyzedText] = useState("")
 
+  // Analysis request tracking
+  const currentAnalysisRequest = useRef<AbortController | null>(null)
+  const pendingAnalysisText = useRef<string>("")
+  const analysisTimeoutId = useRef<NodeJS.Timeout | null>(null)
+
   // Initialize suggestion cache
   const { getCachedSuggestions, cacheSuggestions } = useSuggestionCache({
     documentId,
@@ -44,14 +49,47 @@ export function useSuggestions(): UseSuggestionsReturn {
     },
   })
 
-  // Analyze text
-  const analyzeText = useCallback(async (text: string) => {
-    if (isAnalyzing || text === lastAnalyzedText) return
+  // Cancel current analysis request
+  const cancelCurrentAnalysis = useCallback(() => {
+    if (currentAnalysisRequest.current) {
+      currentAnalysisRequest.current.abort()
+      currentAnalysisRequest.current = null
+    }
+    if (analysisTimeoutId.current) {
+      clearTimeout(analysisTimeoutId.current)
+      analysisTimeoutId.current = null
+    }
+    setIsAnalyzing(false)
+  }, [])
 
+  // Analyze text with cancellation support
+  const analyzeText = useCallback(async (text: string) => {
+    // Cancel any existing analysis
+    cancelCurrentAnalysis()
+
+    // Don't analyze if text is the same as last analyzed
+    if (text === lastAnalyzedText) {
+      console.log("Text unchanged, skipping analysis")
+      return
+    }
+
+    // Set up new analysis request
+    const controller = new AbortController()
+    currentAnalysisRequest.current = controller
+    pendingAnalysisText.current = text
     setIsAnalyzing(true)
+
     try {
+      console.log("Starting analysis for text:", text.substring(0, 50) + "...")
+
       // First check cache
       const cacheResult = await getCachedSuggestions(text)
+
+      // Check if request was cancelled while waiting for cache
+      if (currentAnalysisRequest.current === null || currentAnalysisRequest.current.signal.aborted) {
+        console.log("Analysis cancelled during cache check")
+        return
+      }
 
       if (cacheResult.hit) {
         // filter out any suggestions that do not appear in the text
@@ -65,6 +103,7 @@ export function useSuggestions(): UseSuggestionsReturn {
         })
         setSuggestions(filteredSuggestions || [])
         setLastAnalyzedText(text)
+        console.log("Analysis completed from cache")
         return
       }
 
@@ -75,7 +114,14 @@ export function useSuggestions(): UseSuggestionsReturn {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ text, documentId }),
+        signal: currentAnalysisRequest.current ? currentAnalysisRequest.current.signal : undefined,
       })
+
+      // Check if request was cancelled during API call
+      if (currentAnalysisRequest.current === null || currentAnalysisRequest.current.signal.aborted) {
+        console.log("Analysis cancelled during API call")
+        return
+      }
 
       if (response.ok) {
         const data = await response.json()
@@ -100,20 +146,47 @@ export function useSuggestions(): UseSuggestionsReturn {
         if (!data.fromCache && data.suggestions?.length > 0) {
           await cacheSuggestions(text, data.suggestions)
         }
+        console.log("Analysis completed from API")
       }
     } catch (error) {
-      console.error("Error analyzing text:", error)
+      // Don't log errors for cancelled requests
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log("Analysis request was cancelled")
+      } else {
+        console.error("Error analyzing text:", error)
+      }
     } finally {
-      setIsAnalyzing(false)
+      // Only reset if this is still the current request
+      if (currentAnalysisRequest.current && pendingAnalysisText.current === text) {
+        currentAnalysisRequest.current = null
+        setIsAnalyzing(false)
+      }
     }
-  }, [isAnalyzing, lastAnalyzedText, getCachedSuggestions, cacheSuggestions, documentId])
+  }, [lastAnalyzedText, getCachedSuggestions, cacheSuggestions, documentId, cancelCurrentAnalysis])
 
-  // Trigger analysis
+  // Debounced analysis trigger (100ms delay)
   const triggerAnalysis = useCallback((text: string) => {
-    if (text && text.length > 10 && text !== lastAnalyzedText) {
-      analyzeText(text)
+    // Cancel any pending analysis
+    if (analysisTimeoutId.current) {
+      clearTimeout(analysisTimeoutId.current)
+      analysisTimeoutId.current = null
     }
-  }, [lastAnalyzedText, analyzeText])
+
+    // Don't analyze if text is too short
+    if (!text || text.length <= 10) {
+      return
+    }
+
+    // Schedule new analysis with 100ms delay
+    analysisTimeoutId.current = setTimeout(() => {
+      // Check if text has changed since we scheduled this analysis
+      if (text === pendingAnalysisText.current) {
+        console.log("Text unchanged since scheduling, skipping analysis")
+        return
+      }
+      analyzeText(text)
+    }, 100)
+  }, [analyzeText])
 
   // Accept suggestion
   const acceptSuggestion = useCallback((index: number, currentText: string): string => {

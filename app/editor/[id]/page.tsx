@@ -44,12 +44,10 @@ export default function EditorPage() {
     addSuggestions,
   } = useSuggestions()
 
-  triggerAnalysis(textContent);
-
-  const updateTextAndSync = (newText: string) => {
+  const updateTextAndSync = useCallback((newText: string) => {
     setNeedsSync(true)
     updateTextContent(newText)
-  }
+  }, [updateTextContent])
 
   // Version management
   const { createVersion } = useDocumentVersions({
@@ -82,7 +80,7 @@ export default function EditorPage() {
     const newText = acceptSuggestion(index, textContent)
     setLastAcceptedSuggestion(newText)
     updateTextAndSync(newText)
-  }, [acceptSuggestion, textContent, updateTextContent])
+  }, [acceptSuggestion, textContent, updateTextAndSync])
 
   // Handle adding new suggestions (for engagement suggestions)
   const handleAddSuggestions = useCallback((newSuggestions: AISuggestion[]) => {
@@ -102,21 +100,7 @@ export default function EditorPage() {
       
       console.log('Added engagement suggestion:', suggestion.suggested_text)
     }
-  }, [textContent, updateTextContent, ignoreSuggestion])
-
-  const [needsAnalysis, setNeedsAnalysis] = useState(false)
-
-  const debouncedNeedsAnalysis = useDebounce(needsAnalysis, 10000)
-
-  // Trigger analysis when text changes
-  // - debounced for 10s to avoid triggering analysis on every change
-  // - only trigger if the last change was from the editor
-  useEffect(() => {
-    if(debouncedNeedsAnalysis) {
-      triggerAnalysis(textContent)
-      setNeedsAnalysis(false)
-    }
-  }, [debouncedNeedsAnalysis, triggerAnalysis])
+  }, [textContent, updateTextAndSync, ignoreSuggestion])
 
   if (isLoading) {
     return (
@@ -157,7 +141,8 @@ export default function EditorPage() {
         textContent={textContent}
         onTextChange={(text) => {
           if(text !== lastAcceptedSuggestion) {
-            setNeedsAnalysis(true)
+            // Trigger analysis immediately - the hook will handle debouncing and cancellation
+            triggerAnalysis(text)
           }
           updateTextContent(text)
         }}
