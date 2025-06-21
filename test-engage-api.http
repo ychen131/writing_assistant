@@ -1,0 +1,38 @@
+### Test Engage API - Valid Request
+POST http://localhost:3000/api/engage
+Content-Type: application/json
+
+{
+  "text": "This is a sample text about productivity and time management. It discusses various techniques for improving efficiency and managing time effectively."
+}
+
+### Test Engage API - Missing Text
+POST http://localhost:3000/api/engage
+Content-Type: application/json
+
+{}
+
+### Test Engage API - Empty Text
+POST http://localhost:3000/api/engage
+Content-Type: application/json
+
+{
+  "text": ""
+}
+
+### Test Engage API - Whitespace Only
+POST http://localhost:3000/api/engage
+Content-Type: application/json
+
+{
+  "text": "   "
+}
+
+### Test Engage API - Invalid JSON
+POST http://localhost:3000/api/engage
+Content-Type: application/json
+
+{
+  "text": "This is valid text",
+  "extra": "field"
+} 
