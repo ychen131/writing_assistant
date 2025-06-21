@@ -1,9 +1,33 @@
-### Test Engage API - Valid Request
+### Test Engage API - Valid Request (Mock)
 POST http://localhost:3000/api/engage
 Content-Type: application/json
 
 {
   "text": "This is a sample text about productivity and time management. It discusses various techniques for improving efficiency and managing time effectively."
+}
+
+### Test Engage API - Live AI - Productivity Content
+POST http://localhost:3000/api/engage
+Content-Type: application/json
+
+{
+  "text": "I recently discovered that taking short breaks every 25 minutes significantly improved my productivity. The Pomodoro Technique has been a game-changer for my work routine. I find that these focused work sessions help me maintain concentration while the breaks prevent burnout."
+}
+
+### Test Engage API - Live AI - Coffee Shop Content
+POST http://localhost:3000/api/engage
+Content-Type: application/json
+
+{
+  "text": "The best coffee shops in San Francisco are not just about the coffee anymore. They have become community hubs where people work, meet, and create. From the cozy corners of Blue Bottle to the bustling atmosphere of Sightglass, each place has its own unique vibe and story."
+}
+
+### Test Engage API - Live AI - Short Text
+POST http://localhost:3000/api/engage
+Content-Type: application/json
+
+{
+  "text": "Short"
 }
 
 ### Test Engage API - Missing Text
