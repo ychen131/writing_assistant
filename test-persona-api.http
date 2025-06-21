@@ -1,0 +1,53 @@
+### Test Humorous Persona
+POST http://localhost:3000/api/persona
+Content-Type: application/json
+
+{
+  "text": "The weather is nice today",
+  "persona": "Humorous"
+}
+
+### Test Vivid Persona
+POST http://localhost:3000/api/persona
+Content-Type: application/json
+
+{
+  "text": "The weather is nice today",
+  "persona": "Vivid"
+}
+
+### Test To the point Persona
+POST http://localhost:3000/api/persona
+Content-Type: application/json
+
+{
+  "text": "The weather is nice today",
+  "persona": "To the point"
+}
+
+### Test Invalid Persona
+POST http://localhost:3000/api/persona
+Content-Type: application/json
+
+{
+  "text": "The weather is nice today",
+  "persona": "Invalid"
+}
+
+### Test Missing Text
+POST http://localhost:3000/api/persona
+Content-Type: application/json
+
+{
+  "text": "",
+  "persona": "Humorous"
+}
+
+### Test Longer Text with Humorous Persona
+POST http://localhost:3000/api/persona
+Content-Type: application/json
+
+{
+  "text": "I went to the store to buy some groceries. The store was busy and I had to wait in line for a while. Finally I got my items and went home.",
+  "persona": "Humorous"
+} 
