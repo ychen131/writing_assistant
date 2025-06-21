@@ -1,8 +1,9 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef } from "react"
 import { useParams } from "next/navigation"
 import type { AISuggestion } from "@/lib/types"
 import { useSuggestionCache } from "@/hooks/use-suggestion-cache"
 import { fuzzyMatch } from "@/lib/utils"
+import { extractParagraphs, detectChangedParagraphs, type ParagraphData } from "@/lib/paragraph-utils"
 
 interface UseSuggestionsReturn {
   // Suggestion state
@@ -17,7 +18,9 @@ interface UseSuggestionsReturn {
   
   // Analysis trigger
   triggerAnalysis: (text: string) => void
+  triggerParagraphAnalysis: (text: string) => void
 }
+
 
 export function useSuggestions(): UseSuggestionsReturn {
   const params = useParams()
@@ -28,6 +31,10 @@ export function useSuggestions(): UseSuggestionsReturn {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [selectedSuggestionId, setSelectedSuggestionId] = useState<string | null>(null)
   const [lastAnalyzedText, setLastAnalyzedText] = useState("")
+  
+  // Paragraph tracking state
+  const lastParagraphsRef = useRef<ParagraphData[]>([])
+  const [paragraphSuggestions, setParagraphSuggestions] = useState<Map<string, AISuggestion[]>>(new Map())
 
   // Initialize suggestion cache
   const { getCachedSuggestions, cacheSuggestions } = useSuggestionCache({
@@ -107,12 +114,107 @@ export function useSuggestions(): UseSuggestionsReturn {
     }
   }, [isAnalyzing, lastAnalyzedText, getCachedSuggestions, cacheSuggestions, documentId])
 
+  // Analyze paragraphs - more efficient approach
+  const analyzeParagraphs = useCallback(async (text: string) => {
+    if (isAnalyzing || text === lastAnalyzedText) return
+
+    setIsAnalyzing(true)
+    try {
+      const currentParagraphs = extractParagraphs(text)
+      const changedParagraphs = detectChangedParagraphs(lastParagraphsRef.current, currentParagraphs)
+      
+      if (changedParagraphs.length === 0) {
+        setIsAnalyzing(false)
+        return // No changes to analyze
+      }
+
+      console.log(`Analyzing ${changedParagraphs.length} changed paragraphs out of ${currentParagraphs.length} total`)
+
+      // Call the paragraph analysis API
+      const response = await fetch("/api/analyze-paragraphs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          paragraphs: changedParagraphs.map(p => ({
+            id: p.id,
+            text: p.text,
+            startOffset: p.startOffset
+          })),
+          documentId 
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Update paragraph suggestions map
+        setParagraphSuggestions(prev => {
+          const newMap = new Map(prev)
+          
+          // Remove suggestions for changed paragraphs
+          changedParagraphs.forEach(p => newMap.delete(p.id))
+          
+          // Group new suggestions by paragraph
+          const newSuggestionsByParagraph = new Map<string, AISuggestion[]>()
+          data.suggestions.forEach((suggestion: AISuggestion) => {
+            // Find which paragraph this suggestion belongs to
+            const paragraph = currentParagraphs.find(p => 
+              suggestion.start_index >= p.startOffset && 
+              suggestion.start_index < p.startOffset + p.text.length
+            )
+            if (paragraph) {
+              const existing = newSuggestionsByParagraph.get(paragraph.id) || []
+              existing.push(suggestion)
+              newSuggestionsByParagraph.set(paragraph.id, existing)
+            }
+          })
+          
+          // Add new suggestions to map
+          newSuggestionsByParagraph.forEach((suggestions, paragraphId) => {
+            newMap.set(paragraphId, suggestions)
+          })
+          
+          return newMap
+        })
+
+        // Flatten all paragraph suggestions into main suggestions array
+        const allSuggestions: AISuggestion[] = []
+        paragraphSuggestions.forEach(suggestions => {
+          allSuggestions.push(...suggestions)
+        })
+        allSuggestions.push(...(data.suggestions || []))
+
+        // Filter suggestions that still appear in current text
+        const filteredSuggestions = allSuggestions.filter((s: AISuggestion) => {
+          return text.includes(s.original_text)
+        })
+
+        setSuggestions(filteredSuggestions)
+        setLastAnalyzedText(text)
+        lastParagraphsRef.current = currentParagraphs
+      }
+    } catch (error) {
+      console.error("Error analyzing paragraphs:", error)
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }, [isAnalyzing, lastAnalyzedText, documentId, paragraphSuggestions])
+
   // Trigger analysis
   const triggerAnalysis = useCallback((text: string) => {
     if (text && text.length > 10 && text !== lastAnalyzedText) {
       analyzeText(text)
     }
   }, [lastAnalyzedText, analyzeText])
+
+  // Trigger paragraph analysis (new efficient approach)
+  const triggerParagraphAnalysis = useCallback((text: string) => {
+    if (text && text.length > 10) {
+      analyzeParagraphs(text)
+    }
+  }, [analyzeParagraphs])
 
   // Accept suggestion
   const acceptSuggestion = useCallback((index: number, currentText: string): string => {
@@ -153,5 +255,6 @@ export function useSuggestions(): UseSuggestionsReturn {
     acceptSuggestion,
     ignoreSuggestion,
     triggerAnalysis,
+    triggerParagraphAnalysis,
   }
 } 

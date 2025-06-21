@@ -40,9 +40,11 @@ export default function EditorPage() {
     acceptSuggestion,
     ignoreSuggestion,
     triggerAnalysis,
+    triggerParagraphAnalysis,
   } = useSuggestions()
 
-  triggerAnalysis(textContent);
+  // Use paragraph analysis for better performance
+  triggerParagraphAnalysis(textContent);
 
 
   const updateTextAndSync = (newText: string) => {
@@ -59,7 +61,7 @@ export default function EditorPage() {
     onVersionRestore: (restoredText) => {
       setNeedsSync(true)
       updateTextContent(restoredText)
-      triggerAnalysis(restoredText)
+      triggerParagraphAnalysis(restoredText)
     }
   })
 
@@ -91,12 +93,13 @@ export default function EditorPage() {
   // Trigger analysis when text changes
   // - debounced for 10s to avoid triggering analysis on every change
   // - only trigger if the last change was from the editor
+  // - use paragraph analysis for better performance
   useEffect(() => {
     if(debouncedNeedsAnalysis) {
-      triggerAnalysis(textContent)
+      triggerParagraphAnalysis(textContent)
       setNeedsAnalysis(false)
     }
-  }, [debouncedNeedsAnalysis, triggerAnalysis])
+  }, [debouncedNeedsAnalysis, triggerParagraphAnalysis])
 
 
   if (isLoading) {
