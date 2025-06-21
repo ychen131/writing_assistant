@@ -8,9 +8,11 @@ import { $createSuggestionDecoratorNode, SuggestionDecoratorNode } from "@/compo
 
 // String suggestions from the paragraph, merging all
 // nodes into a single text node.
-export function removeSuggestions(paragraph: ParagraphNode) {
+export function removeSuggestions(node: ParagraphNode) {
     let i = 0
-    while (i < paragraph.getChildrenSize()) {
+    let paragraph = node.getLatest()
+    while (i < paragraph.getLatest().getChildrenSize()) {
+      paragraph = paragraph.getLatest()
       const current = paragraph.getChildAtIndex(i)
 
       // Convert SuggestionDecoratorNodes to TextNodes
@@ -24,11 +26,13 @@ export function removeSuggestions(paragraph: ParagraphNode) {
       // If current is a TextNode, try to merge with next nodes
       if ($isTextNode(current)) {
         let merged = true
-        while (merged && i + 1 < paragraph.getChildrenSize()) {
+        let merging: TextNode = current
+        while (merged && i + 1 < paragraph.getLatest().getChildrenSize()) {
+          paragraph = paragraph.getLatest()
           const next = paragraph.getChildAtIndex(i + 1)
 
-          if ($isTextNode(next) || next instanceof SuggestionDecoratorNode) {
-            current.mergeWithSibling(next)
+          if ($isTextNode(next)) {
+            merging = merging.mergeWithSibling(next).getLatest()
             // After merge, next node is removed, so we don't increment i
             merged = true
           } else {
