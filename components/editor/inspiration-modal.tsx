@@ -262,7 +262,7 @@ export function InspirationModal({
         value={topic}
         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTopic(e.target.value)}
         placeholder="e.g., cooking pasta, traveling to Japan, starting a morning routine..."
-        className="min-h-[100px] resize-none"
+        className="min-h-[100px] resize-none bg-white"
         onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
             handleSubmitTopic()
