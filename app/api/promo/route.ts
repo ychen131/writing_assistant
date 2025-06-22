@@ -42,22 +42,24 @@ interface PromoResponse {
  */
 function getSmartPromoPrompt(userText: string): string {
   return `**Role:**
-You are an expert content marketing strategist who specializes in helping creators talk about products in an authentic, natural way. Your goal is to rewrite pushy, ad-like text into compelling, trust-building recommendations.
+You are an expert content marketing strategist who specializes in helping creators talk about products in an authentic, natural way. Your primary audience is food and travel creators. Your goal is to rewrite pushy, ad-like text into compelling, trust-building recommendations.
 
 **Task:**
-Analyze the user's promotional text provided below. Rewrite it in three different, more authentic ways, each based on a distinct marketing strategy. For each rewritten version, you must also provide a short, educational explanation of the strategy you used.
+Analyze the user's promotional text provided below. Rewrite it in three different, more authentic ways, each based on a distinct marketing strategy. **Critically, you must ensure the three versions are stylistically diverse and avoid repetitive phrasing.** For each rewritten version, you must also provide a short, educational explanation of the strategy you used.
 
 **User's Text:**
-${userText}
+\`${userText}\`
 
 **Strategies to Use:**
-1.  **Focus on Storytelling:** Rewrite the text by telling a personal story about using the product and the benefit it provided.
-2.  **Focus on a Relatable Problem:** Rewrite the text by highlighting a common, relatable problem that the product solves.
-3.  **Focus on Transformation:** Rewrite the text to focus on the aspirational outcome or the better lifestyle the product helps the user achieve.
+1.  **Focus on Storytelling:** Rewrite the text by telling a personal story. This could be an anecdote about the first time you used the product, a surprising moment, or how it felt to experience the benefit. **Do not use obvious starting phrases like "I remember when...". Find a more creative entry point.**
+2.  **Focus on a Relatable Problem:** Rewrite the text by highlighting a specific, relatable problem that the product solves. Describe the "before" state (the feeling of the problem) to make the "after" state (the solution) more impactful.
+3.  **Focus on Transformation:** Rewrite the text to focus on the aspirational outcome or the better lifestyle the product helps the user achieve. Instead of what the product *does*, describe what the user *becomes* (e.g., 'a more mindful traveler,' 'a confident home cook').
 
 **Constraints:**
 * Do not invent product features that don't exist in the original text.
 * The explanations should be concise (1-2 sentences) and focused on *why* the strategy is effective.
+* **Crucially, avoid clichés and formulaic sentence structures across all three suggestions.**
+* **Enrich the Content:** When rewriting, incorporate specific, evocative details relevant to the food or travel topic. For example, if the user mentions "Austin BBQ," consider mentioning "brisket," "sausages," or "smoky flavors." If they mention the "Italian coast," consider "sun-drenched cliffs," "limoncello," or "cobblestone streets." This makes the writing more vivid and authoritative.
 
 **Output Format:**
 Respond with a valid JSON object. The root object should have a single key, "suggestions," which is an array of exactly three objects. Each object must have the keys "strategy", "rewrittenText", and "explanation".
@@ -67,7 +69,7 @@ Respond with a valid JSON object. The root object should have a single key, "sug
   "suggestions": [
     {
       "strategy": "Focus on Storytelling",
-      "rewrittenText": "Your rewritten version based on the storytelling strategy.",
+      "rewrittenText": "Your creative and non-formulaic rewritten version based on the storytelling strategy.",
       "explanation": "Your explanation of why the storytelling approach is effective."
     },
     {

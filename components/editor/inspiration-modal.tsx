@@ -222,7 +222,7 @@ export function InspirationModal({
           <Sparkles className="h-5 w-5 mr-3 text-green-600" />
           <div>
             <div className="font-medium">I need inspiration</div>
-            <div className="text-sm text-gray-500">Get AI-generated writing angles</div>
+            <div className="text-sm text-gray-500">Get AI-generated ideas</div>
           </div>
           <ArrowRight className="h-4 w-4 ml-auto" />
         </Button>
