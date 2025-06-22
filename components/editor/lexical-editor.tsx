@@ -76,7 +76,7 @@ function TextInitializer({ initialText, isInitialized, setInitialized, suggestio
   const [processedSuggestions, setProcessedSuggestions] = useState<Set<AISuggestion>>(new Set<AISuggestion>());
 
   useEffect(() => {
-    if (initialText && !isInitialized) {
+    if (!isInitialized) {
       editor.update(() => {
         const root = $getRoot()
         root.clear();
