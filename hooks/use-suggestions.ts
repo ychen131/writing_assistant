@@ -35,6 +35,14 @@ export function useSuggestions(): UseSuggestionsReturn {
   const pendingAnalysisText = useRef<string>("")
   const analysisTimeoutId = useRef<NodeJS.Timeout | null>(null)
   const isUserTyping = useRef<boolean>(false)
+  
+  // Unique ID generation
+  const nextId = useRef<number>(0)
+  
+  // Generate unique ID for suggestions
+  const generateUniqueId = useCallback(() => {
+    return nextId.current++
+  }, [])
 
   // Initialize suggestion cache
   const { getCachedSuggestions, cacheSuggestions } = useSuggestionCache({
@@ -68,12 +76,6 @@ export function useSuggestions(): UseSuggestionsReturn {
     // Cancel any existing analysis
     cancelCurrentAnalysis()
 
-    // Don't analyze if text is the same as last analyzed
-    if (text === lastAnalyzedText) {
-      console.log("Text unchanged, skipping analysis")
-      return
-    }
-
     // Set up new analysis request
     const controller = new AbortController()
     currentAnalysisRequest.current = controller
@@ -101,8 +103,35 @@ export function useSuggestions(): UseSuggestionsReturn {
             console.log("suggestion not in text", s)
             return false
           }
+        }).map((s: AISuggestion) => ({
+          ...s,
+          id: generateUniqueId(),
+          status: "proposed" as const
+        }))
+        
+        // Merge new suggestions with existing ones instead of replacing
+        setSuggestions(prevSuggestions => {
+          // Keep existing suggestions that are still valid (not accepted/ignored)
+          const existingValidSuggestions = prevSuggestions.filter(s => 
+            s.status === "proposed" && text.includes(s.original_text)
+          )
+          
+          // Combine existing valid suggestions with new ones, avoiding duplicates
+          const allSuggestions = [...existingValidSuggestions]
+          filteredSuggestions.forEach((newSuggestion: AISuggestion) => {
+            const isDuplicate = allSuggestions.some(existing => 
+              existing.original_text === newSuggestion.original_text && 
+              existing.start_index === newSuggestion.start_index &&
+              existing.type === newSuggestion.type &&
+              existing.suggested_text === newSuggestion.suggested_text
+            )
+            if (!isDuplicate) {
+              allSuggestions.push(newSuggestion)
+            }
+          })
+          
+          return allSuggestions
         })
-        setSuggestions(filteredSuggestions || [])
         setLastAnalyzedText(text)
         console.log("Analysis completed from cache")
         return
@@ -128,8 +157,8 @@ export function useSuggestions(): UseSuggestionsReturn {
         const data = await response.json()
         data.suggestions = data.suggestions.map((s: AISuggestion, idx: number) => ({ 
           ...s, 
-          id: idx, 
-          status: "proposed" 
+          id: generateUniqueId(), 
+          status: "proposed" as const 
         }))
         // filter out any suggestions that do not appear in the text
         const filteredSuggestions = data.suggestions.filter((s: AISuggestion) => {
@@ -140,7 +169,30 @@ export function useSuggestions(): UseSuggestionsReturn {
             return false
           }
         })
-        setSuggestions(filteredSuggestions || [])
+        
+        // Merge new suggestions with existing ones instead of replacing
+        setSuggestions(prevSuggestions => {
+          // Keep existing suggestions that are still valid (not accepted/ignored)
+          const existingValidSuggestions = prevSuggestions.filter(s => 
+            s.status === "proposed" && text.includes(s.original_text)
+          )
+          
+          // Combine existing valid suggestions with new ones, avoiding duplicates
+          const allSuggestions = [...existingValidSuggestions]
+          filteredSuggestions.forEach((newSuggestion: AISuggestion) => {
+            const isDuplicate = allSuggestions.some(existing => 
+              existing.original_text === newSuggestion.original_text && 
+              existing.start_index === newSuggestion.start_index &&
+              existing.type === newSuggestion.type &&
+              existing.suggested_text === newSuggestion.suggested_text
+            )
+            if (!isDuplicate) {
+              allSuggestions.push(newSuggestion)
+            }
+          })
+          
+          return allSuggestions
+        })
         setLastAnalyzedText(text)
 
         // Cache the new suggestions if they came from API
@@ -163,7 +215,7 @@ export function useSuggestions(): UseSuggestionsReturn {
         setIsAnalyzing(false)
       }
     }
-  }, [lastAnalyzedText, getCachedSuggestions, cacheSuggestions, documentId, cancelCurrentAnalysis])
+  }, [getCachedSuggestions, cacheSuggestions, documentId, cancelCurrentAnalysis, generateUniqueId])
 
   // Trigger analysis when user stops typing (500ms delay)
   const triggerAnalysis = useCallback((text: string) => {
@@ -247,8 +299,15 @@ export function useSuggestions(): UseSuggestionsReturn {
 
   // Add new suggestions (for engagement suggestions)
   const addSuggestions = useCallback((newSuggestions: AISuggestion[]) => {
-    setSuggestions(prev => [...prev, ...newSuggestions])
-  }, [])
+    setSuggestions(prev => {
+      const suggestionsWithUniqueIds = newSuggestions.map(s => ({
+        ...s,
+        id: generateUniqueId(),
+        status: "proposed" as const
+      }))
+      return [...prev, ...suggestionsWithUniqueIds]
+    })
+  }, [generateUniqueId])
 
   return {
     suggestions,
