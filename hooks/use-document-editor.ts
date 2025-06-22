@@ -113,6 +113,7 @@ export function useDocumentEditor(): UseDocumentEditorReturn {
   }, [])
 
   const updateTextContent = useCallback((newText: string) => {
+    console.log("updateTextContent", newText)
     setTextContent(newText)
   }, [])
 

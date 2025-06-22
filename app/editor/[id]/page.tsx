@@ -72,7 +72,7 @@ export default function EditorPage() {
     }
   }, [debouncedContentForVersion, document, createVersion])
 
-  const [lastAcceptedSuggestion, setLastAcceptedSuggestion] = useState(textContent)
+  const [lastAcceptedSuggestion, setLastAcceptedSuggestion] = useState<string | null>(null)
 
   // Handle suggestion acceptance
   // we need to accept the suggestion _and_ update the text content

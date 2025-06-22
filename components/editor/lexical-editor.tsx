@@ -38,7 +38,7 @@ interface LexicalEditorProps {
   needsSync: boolean
   setSynced: () => void
   onChange?: (editorState: EditorState) => void
-  onTextChange?: (text: string) => void
+  onTextChange: (text: string) => void
   suggestions: AISuggestion[]
   onSuggestionClick?: (id: string | null) => void
   selectedSuggestionId?: string | null
@@ -49,7 +49,7 @@ interface LexicalEditorProps {
 function MyOnChangePlugin({
   onChange,
   onTextChange,
-}: { onChange?: (editorState: EditorState) => void; onTextChange?: (text: string) => void }) {
+}: { onChange?: (editorState: EditorState) => void; onTextChange: (text: string) => void }) {
   const [editor] = useLexicalComposerContext()
 
   return (
@@ -57,14 +57,11 @@ function MyOnChangePlugin({
       ignoreSelectionChange={true}
       onChange={(editorState) => {
         onChange?.(editorState)
-
-        if (onTextChange) {
-          editorState.read(() => {
-            const root = $getRoot()
-            const text = root.getTextContent()
-            onTextChange(text)
-          })
-        }
+        editorState.read(() => {
+          const root = $getRoot()
+          const text = root.getTextContent()
+          onTextChange(text)
+        })
       }}
     />
   )
@@ -180,7 +177,7 @@ export function LexicalEditorComponent({
               onChange={onChange}
               onTextChange={(text) => {
                 setWordCount(getWordCount(text))
-                onTextChange?.(text)
+                onTextChange(text)
               }}
             />
             <HistoryPlugin />

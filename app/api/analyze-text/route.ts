@@ -51,8 +51,10 @@ export async function POST(request: NextRequest) {
     // Use OpenAI GPT-4o-mini to analyze the text
     const { text: analysis } = await generateText({
       model: openai("gpt-4o-mini"),
-      prompt: `Analyze the following text for writing issues. Return your response as a JSON array of suggestions. Each suggestion should have the following structure:\n{\n  \"type\": \"grammar\" | \"spelling\" | \"style\",\n  \"original_text\": \"the text that needs correction\",\n  \"suggested_text\": \"the corrected text\",\n  \"start_index\": number (character position where the issue starts),\n  \"end_index\": number (character position where the issue ends),\n  \"message\": \"explanation of the issue and why the suggestion improves it\"\n}\n\nTypes:\n- spelling: Misspelled words, typos\n- grammar: Verb conjugation, subject-verb agreement, punctuation, word form\n- style: Wordiness, redundancy, conciseness, ambiguity, repetitive vocabulary, passive voice, vague language, tone issues\n\nOnly return the JSON array, no other text. If no issues are found, return an empty array [].\n\nText to analyze:\n${text}`,
+      prompt: `Analyze the following text for writing issues. Return your response as a JSON array of suggestions. Each suggestion should have the following structure:\n{\n  \"type\": \"grammar\" | \"spelling\" | \"style\" | \"accuracy\",\n  \"original_text\": \"the text that needs correction\",\n  \"suggested_text\": \"the corrected text\",\n  \"start_index\": number (character position where the issue starts),\n  \"end_index\": number (character position where the issue ends),\n  \"message\": \"explanation of the issue and why the suggestion improves it\"\n}\n\nTypes:\n- spelling: Misspelled words, typos\n- grammar: Verb conjugation, subject-verb agreement, punctuation, word form\n- style: Wordiness, redundancy, conciseness, ambiguity, repetitive vocabulary, passive voice, vague language, tone issues\n- accuracy: Factual inaccuracies, such as misspelled names of famous people (e.g., "Tim Apple" instead of "Tim Cook", "Nicky Minaj" instead of "Nicki Minaj") or well-known landmarks.\n\nOnly return the JSON array, no other text. If no issues are found, return an empty array [].\n\nText to analyze:\n${text}`,
     })
+
+    console.log("Raw response from OpenAI:", analysis)
 
     let suggestions: AISuggestion[] = []
     try {

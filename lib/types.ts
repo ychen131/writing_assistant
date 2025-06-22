@@ -44,7 +44,7 @@ export interface Suggestion {
 
 export interface AISuggestion {
   id: number
-  type: "spelling" | "grammar" | "style" | "question" | "call-to-action" | "interactive-prompt" | "smart-promo"
+  type: "spelling" | "grammar" | "style" | "accuracy" | "question" | "call-to-action" | "interactive-prompt" | "smart-promo"
   original_text: string
   suggested_text: string
   start_index: number

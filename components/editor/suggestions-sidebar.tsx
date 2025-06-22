@@ -27,7 +27,9 @@ export function SuggestionsSidebar({
   const proposedSuggestions = suggestions.filter((s) => s.status === "proposed")
 
   const suggestionGroups = {
-    spelling: proposedSuggestions.filter((s) => s.type === "spelling"),
+    spelling: proposedSuggestions.filter(
+      (s) => s.type === "spelling" || s.type === "accuracy"
+    ),
     grammarAndStyle: proposedSuggestions.filter(
       (s) => s.type === "grammar" || s.type === "style"
     ),
@@ -67,6 +69,8 @@ export function SuggestionsSidebar({
     switch (type) {
       case "spelling":
         return "bg-red-100 text-red-800 border-red-200"
+      case "accuracy":
+        return "bg-pink-100 text-pink-800 border-pink-200"
       case "grammar":
         return "bg-blue-100 text-blue-800 border-blue-200"
       case "style":
@@ -87,6 +91,7 @@ export function SuggestionsSidebar({
       case "spelling":
       case "grammar":
       case "style":
+      case "accuracy":
         return type.charAt(0).toUpperCase() + type.slice(1)
       case "question":
         return "Question"

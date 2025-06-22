@@ -73,6 +73,19 @@ export function useSuggestions(): UseSuggestionsReturn {
 
   // Analyze text with cancellation support
   const analyzeText = useCallback(async (text: string) => {
+    // If text is empty or too short, clear suggestions and stop.
+    if (!text || text.length <= 10) {
+      setSuggestions([])
+      setLastAnalyzedText(text)
+      return
+    }
+
+    if (text === lastAnalyzedText) {
+      console.log("Skipping analysis for already analyzed text.")
+      return
+    }
+
+
     // Cancel any existing analysis
     cancelCurrentAnalysis()
 
@@ -109,29 +122,8 @@ export function useSuggestions(): UseSuggestionsReturn {
           status: "proposed" as const
         }))
         
-        // Merge new suggestions with existing ones instead of replacing
-        setSuggestions(prevSuggestions => {
-          // Keep existing suggestions that are still valid (not accepted/ignored)
-          const existingValidSuggestions = prevSuggestions.filter(s => 
-            s.status === "proposed" && text.includes(s.original_text)
-          )
-          
-          // Combine existing valid suggestions with new ones, avoiding duplicates
-          const allSuggestions = [...existingValidSuggestions]
-          filteredSuggestions.forEach((newSuggestion: AISuggestion) => {
-            const isDuplicate = allSuggestions.some(existing => 
-              existing.original_text === newSuggestion.original_text && 
-              existing.start_index === newSuggestion.start_index &&
-              existing.type === newSuggestion.type &&
-              existing.suggested_text === newSuggestion.suggested_text
-            )
-            if (!isDuplicate) {
-              allSuggestions.push(newSuggestion)
-            }
-          })
-          
-          return allSuggestions
-        })
+        // Replace existing suggestions with new ones from the cache
+        setSuggestions(filteredSuggestions)
         setLastAnalyzedText(text)
         console.log("Analysis completed from cache")
         return
@@ -170,34 +162,13 @@ export function useSuggestions(): UseSuggestionsReturn {
           }
         })
         
-        // Merge new suggestions with existing ones instead of replacing
-        setSuggestions(prevSuggestions => {
-          // Keep existing suggestions that are still valid (not accepted/ignored)
-          const existingValidSuggestions = prevSuggestions.filter(s => 
-            s.status === "proposed" && text.includes(s.original_text)
-          )
-          
-          // Combine existing valid suggestions with new ones, avoiding duplicates
-          const allSuggestions = [...existingValidSuggestions]
-          filteredSuggestions.forEach((newSuggestion: AISuggestion) => {
-            const isDuplicate = allSuggestions.some(existing => 
-              existing.original_text === newSuggestion.original_text && 
-              existing.start_index === newSuggestion.start_index &&
-              existing.type === newSuggestion.type &&
-              existing.suggested_text === newSuggestion.suggested_text
-            )
-            if (!isDuplicate) {
-              allSuggestions.push(newSuggestion)
-            }
-          })
-          
-          return allSuggestions
-        })
+        // Replace existing suggestions with new ones from the API
+        setSuggestions(filteredSuggestions)
         setLastAnalyzedText(text)
 
         // Cache the new suggestions if they came from API
         if (!data.fromCache && data.suggestions?.length > 0) {
-          await cacheSuggestions(text, data.suggestions)
+          cacheSuggestions(text, data.suggestions)
         }
         console.log("Analysis completed from API")
       }
@@ -215,7 +186,7 @@ export function useSuggestions(): UseSuggestionsReturn {
         setIsAnalyzing(false)
       }
     }
-  }, [getCachedSuggestions, cacheSuggestions, documentId, cancelCurrentAnalysis, generateUniqueId])
+  }, [getCachedSuggestions, cacheSuggestions, documentId, cancelCurrentAnalysis, generateUniqueId, lastAnalyzedText])
 
   // Trigger analysis when user stops typing (500ms delay)
   const triggerAnalysis = useCallback((text: string) => {
@@ -236,10 +207,7 @@ export function useSuggestions(): UseSuggestionsReturn {
       setIsAnalyzing(false)
     }
 
-    // Don't analyze if text is too short
-    if (!text || text.length <= 10) {
-      return
-    }
+
 
     // Set the pending text now so we can track changes
     pendingAnalysisText.current = text

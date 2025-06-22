@@ -23,6 +23,7 @@ export class SuggestionDecoratorNode extends TextNode {
       const getHighlightClassName = (type: string) => {
         switch (type) {
           case "spelling":
+          case "accuracy":
             return "underline-red"
           case "grammar":
           case "style":
