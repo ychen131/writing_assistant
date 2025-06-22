@@ -121,6 +121,7 @@ export default function EditorPage() {
       <DocumentHeader
         // document metadata sync with DB
         title={title}
+        onTitleChange={updateTitle}
         // for displaying status indicators
         isSaving={isSaving}
         lastSaved={lastSaved}
