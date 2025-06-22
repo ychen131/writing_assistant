@@ -29,12 +29,24 @@ export function DocumentList() {
   const [editingTitle, setEditingTitle] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState("")
   const [isInspirationModalOpen, setIsInspirationModalOpen] = useState(false)
-  const [view, setView] = useState("grid")
+  const [view, setView] = useState(() => {
+    if (typeof window !== "undefined") {
+      const savedView = localStorage.getItem("dashboardView")
+      if (savedView === "grid" || savedView === "list") {
+        return savedView
+      }
+    }
+    return "grid"
+  })
   const supabase = createClient()
 
   useEffect(() => {
     fetchDocuments()
   }, [])
+
+  useEffect(() => {
+    localStorage.setItem("dashboardView", view)
+  }, [view])
 
   const fetchDocuments = async () => {
     try {
@@ -270,24 +282,77 @@ export function DocumentList() {
           {view === "list" && (
             <div className="space-y-2">
               <div className="grid grid-cols-12 gap-4 px-4 py-2 font-medium text-sm text-gray-500 border-b">
-                <div className="col-span-5">Title</div>
+                <div className="col-span-4">Title</div>
                 <div className="col-span-4">Preview</div>
                 <div className="col-span-2">Last Updated</div>
-                <div className="col-span-1"></div>
+                <div className="col-span-2"></div>
               </div>
               {documents.map((doc) => (
                 <div key={doc.id} className="grid grid-cols-12 gap-4 items-center px-4 py-3 bg-white rounded-lg shadow-sm hover:bg-gray-50">
-                  <div className="col-span-5 font-medium truncate">{doc.title}</div>
+                  <div className="col-span-4 font-medium">
+                    {editingTitle === doc.id ? (
+                      <Input
+                        value={newTitle}
+                        onChange={(e) => setNewTitle(e.target.value)}
+                        onBlur={() => {
+                          if (newTitle.trim()) {
+                            handleRenameDocument(doc.id, newTitle.trim())
+                          } else {
+                            setEditingTitle(null)
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            if (newTitle.trim()) {
+                              handleRenameDocument(doc.id, newTitle.trim())
+                            } else {
+                              setEditingTitle(null)
+                            }
+                          } else if (e.key === "Escape") {
+                            setEditingTitle(null)
+                          }
+                        }}
+                        className="font-medium"
+                        autoFocus
+                      />
+                    ) : (
+                      <span className="truncate">{doc.title}</span>
+                    )}
+                  </div>
                   <div className="col-span-4 text-sm text-gray-600 line-clamp-1">
                     {doc.plain_text_content || "No content yet..."}
                   </div>
                   <div className="col-span-2 text-sm text-gray-500">
                     {formatDistanceToNow(new Date(doc.updated_at), { addSuffix: true })}
                   </div>
-                  <div className="col-span-1 text-right">
+                  <div className="col-span-2 flex items-center justify-end gap-2">
                     <Link href={`/editor/${doc.id}`}>
                       <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary/5">Open</Button>
                     </Link>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setTimeout(() => {
+                              setEditingTitle(doc.id)
+                              setNewTitle(doc.title)
+                            }, 100)
+                          }}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setDeleteDocument(doc)} className="text-red-600">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               ))}
