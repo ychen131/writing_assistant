@@ -44,13 +44,15 @@ export interface Suggestion {
 
 export interface AISuggestion {
   id: number
-  type: "spelling" | "grammar" | "style" | "question" | "call-to-action" | "interactive-prompt"
+  type: "spelling" | "grammar" | "style" | "question" | "call-to-action" | "interactive-prompt" | "smart-promo"
   original_text: string
   suggested_text: string
   start_index: number
   end_index: number
   message: string
   status: "proposed" | "accepted" | "ignored"
+  strategy?: string
+  explanation?: string
 }
 
 export interface SuggestionCacheEntry {

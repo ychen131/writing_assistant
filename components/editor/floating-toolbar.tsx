@@ -1,14 +1,15 @@
 /**
  * Floating Toolbar Component
  * 
- * A floating toolbar that appears on text selection with Persona and Engage buttons.
- * Used for the Persona feature to rewrite selected text and the Engage feature to add engagement suggestions.
+ * A floating toolbar that appears on text selection with Persona, Engage, and Smart Promo buttons.
+ * Used for the Persona feature to rewrite selected text, the Engage feature to add engagement suggestions,
+ * and the Smart Promo feature to generate strategic promotional suggestions.
  */
 
 "use client"
 
 import React from 'react'
-import { Sparkles, ChevronDown, MessageCircle } from 'lucide-react'
+import { Sparkles, ChevronDown, MessageCircle, Megaphone } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +40,10 @@ interface FloatingToolbarProps {
    */
   onEngage: () => void
   /**
+   * Callback function called when the smart promo button is clicked
+   */
+  onSmartPromo: () => void
+  /**
    * Whether the persona feature is currently loading
    */
   isPersonaLoading: boolean
@@ -46,6 +51,10 @@ interface FloatingToolbarProps {
    * Whether the engage feature is currently loading
    */
   isEngageLoading: boolean
+  /**
+   * Whether the smart promo feature is currently loading
+   */
+  isSmartPromoLoading: boolean
 }
 
 /**
@@ -54,8 +63,10 @@ interface FloatingToolbarProps {
 export function FloatingToolbar({ 
   onPersonaSelect, 
   onEngage, 
+  onSmartPromo,
   isPersonaLoading, 
-  isEngageLoading 
+  isEngageLoading,
+  isSmartPromoLoading
 }: FloatingToolbarProps) {
   /**
    * Handles persona selection from dropdown
@@ -73,6 +84,14 @@ export function FloatingToolbar({
     onEngage()
   }
 
+  /**
+   * Handles smart promo button click
+   */
+  const handleSmartPromo = () => {
+    console.log('Smart Promo clicked')
+    onSmartPromo()
+  }
+
   return (
     <div className="flex items-center gap-1 bg-background border border-border rounded-md shadow-lg p-1">
       <DropdownMenu>
@@ -81,7 +100,7 @@ export function FloatingToolbar({
             variant="ghost"
             size="sm"
             className="h-8 px-3 text-sm font-medium"
-            disabled={isEngageLoading}
+            disabled={isEngageLoading || isSmartPromoLoading}
           >
             <Sparkles className="h-4 w-4 mr-1" />
             Persona
@@ -106,10 +125,21 @@ export function FloatingToolbar({
         size="sm"
         className="h-8 px-3 text-sm font-medium"
         onClick={handleEngage}
-        disabled={isPersonaLoading}
+        disabled={isPersonaLoading || isSmartPromoLoading}
       >
         <MessageCircle className="h-4 w-4 mr-1" />
         Engage
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 px-3 text-sm font-medium"
+        onClick={handleSmartPromo}
+        disabled={isPersonaLoading || isEngageLoading}
+      >
+        <Megaphone className="h-4 w-4 mr-1" />
+        Smart Promo
       </Button>
     </div>
   )

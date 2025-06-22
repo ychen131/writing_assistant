@@ -1,23 +1,23 @@
 /**
- * Floating Toolbar Plugin
+ * Floating Toolbar Plugin for Lexical Editor
  * 
- * A Lexical plugin that manages the visibility and positioning of the floating toolbar
- * based on text selection in the editor. Supports both Persona and Engage features.
+ * Provides a floating toolbar that appears on text selection with Persona, Engage, and Smart Promo buttons.
+ * Handles API calls and state management for text transformation features.
  */
 
 "use client"
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
-import { $getSelection, $isRangeSelection, $getRoot, type RangeSelection } from 'lexical'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { toast } from "sonner"
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
+import { $getSelection, $isRangeSelection } from 'lexical'
 import { FloatingToolbar } from './floating-toolbar'
 import { ProcessingModal } from './processing-modal'
+import { toast } from 'sonner'
 import type { AISuggestion } from '@/lib/types'
 
 /**
- * Position and visibility state for the floating toolbar
+ * Toolbar state interface
  */
 interface ToolbarState {
   isVisible: boolean
@@ -25,6 +25,9 @@ interface ToolbarState {
   y: number
 }
 
+/**
+ * Props for the FloatingToolbarPlugin component
+ */
 interface FloatingToolbarPluginProps {
   onRewrite: (originalText: string, rewrittenText: string) => void;
   // Unified suggestions management
@@ -66,54 +69,66 @@ function transformEngagementSuggestions(apiSuggestions: Array<{type: string, con
 }
 
 /**
- * Lexical plugin that manages floating toolbar visibility and positioning
+ * Transform Smart Promo API response to unified AISuggestion format
  */
+function transformSmartPromoSuggestions(apiSuggestions: Array<{strategy: string, rewrittenText: string, explanation: string}>, originalText: string, selection: any): AISuggestion[] {
+  return apiSuggestions.map((suggestion, index) => {
+    return {
+      id: Date.now() + index, // Generate unique ID
+      type: 'smart-promo',
+      original_text: originalText,
+      suggested_text: suggestion.rewrittenText,
+      start_index: selection.anchor.offset,
+      end_index: selection.focus.offset,
+      message: 'Promotional Rewrite', // Use a static title to avoid duplication
+      status: 'proposed' as const,
+      strategy: suggestion.strategy,
+      explanation: suggestion.explanation
+    }
+  })
+}
+
 export function FloatingToolbarPlugin({ onRewrite, onAddSuggestions }: FloatingToolbarPluginProps) {
   const [editor] = useLexicalComposerContext()
-  
   const [toolbarState, setToolbarState] = useState<ToolbarState>({
     isVisible: false,
     x: 0,
     y: 0,
   })
-
   const [isPersonaProcessing, setIsPersonaProcessing] = useState(false)
   const [isEngageProcessing, setIsEngageProcessing] = useState(false)
+  const [isSmartPromoProcessing, setIsSmartPromoProcessing] = useState(false)
+  
   const personaAbortControllerRef = useRef<AbortController | null>(null)
   const engageAbortControllerRef = useRef<AbortController | null>(null)
+  const smartPromoAbortControllerRef = useRef<AbortController | null>(null)
 
   /**
-   * Checks if the selected text represents the full document content
-   * Allows for minor differences (whitespace, newlines)
+   * Check if the selected text represents the full document content
    */
-  const isFullTextSelected = useCallback((selectedText: string): boolean => {
+  const isFullTextSelected = useCallback((selectedText: string) => {
     const fullText = editor.getEditorState().read(() => {
-      const root = $getRoot()
-      return root.getTextContent()
+      return editor.getRootElement()?.textContent || ''
     })
-
-    // Normalize both texts by trimming whitespace and normalizing newlines
-    const normalizedSelected = selectedText.trim().replace(/\r\n/g, '\n')
-    const normalizedFull = fullText.trim().replace(/\r\n/g, '\n')
-
-    // Allow for minor differences (up to 5% length difference)
-    const lengthDiff = Math.abs(normalizedSelected.length - normalizedFull.length)
-    const maxAllowedDiff = Math.max(normalizedFull.length * 0.05, 10) // 5% or 10 chars, whichever is larger
-
-    return lengthDiff <= maxAllowedDiff
+    
+    // Allow for minor differences (whitespace, line breaks)
+    const normalizedSelected = selectedText.trim().replace(/\s+/g, ' ')
+    const normalizedFull = fullText.trim().replace(/\s+/g, ' ')
+    
+    return normalizedSelected === normalizedFull
   }, [editor])
 
   const handlePersonaSelect = useCallback(async (persona: string) => {
-    if (isPersonaProcessing || isEngageProcessing) return;
+    if (isPersonaProcessing || isEngageProcessing || isSmartPromoProcessing) return;
 
-    // First, synchronously get the text from within a read block.
+    // Get the selected text
     const selectedText = editor.getEditorState().read(() => {
       const selection = $getSelection();
       return $isRangeSelection(selection) ? selection.getTextContent() : null;
     });
 
     if (!selectedText || selectedText.trim() === '') {
-      // Don't proceed if there's no text.
+      toast.error("Please select some text to apply persona.");
       return;
     }
 
@@ -151,10 +166,10 @@ export function FloatingToolbarPlugin({ onRewrite, onAddSuggestions }: FloatingT
         editor.setEditable(true)
         personaAbortControllerRef.current = null
     }
-  }, [editor, isPersonaProcessing, isEngageProcessing, onRewrite]);
+  }, [editor, isPersonaProcessing, isEngageProcessing, isSmartPromoProcessing, onRewrite]);
 
   const handleEngage = useCallback(async () => {
-    if (isPersonaProcessing || isEngageProcessing) return;
+    if (isPersonaProcessing || isEngageProcessing || isSmartPromoProcessing) return;
 
     // Get the selected text
     const selectedText = editor.getEditorState().read(() => {
@@ -213,13 +228,85 @@ export function FloatingToolbarPlugin({ onRewrite, onAddSuggestions }: FloatingT
         editor.setEditable(true)
         engageAbortControllerRef.current = null
     }
-  }, [editor, isPersonaProcessing, isEngageProcessing, isFullTextSelected, onAddSuggestions]);
+  }, [editor, isPersonaProcessing, isEngageProcessing, isSmartPromoProcessing, isFullTextSelected, onAddSuggestions]);
+
+  const handleSmartPromo = useCallback(async () => {
+    if (isPersonaProcessing || isEngageProcessing || isSmartPromoProcessing) return;
+
+    // Get the selected text and selection
+    const { selectedText, selection } = editor.getEditorState().read(() => {
+      const selection = $getSelection();
+      return {
+        selectedText: $isRangeSelection(selection) ? selection.getTextContent() : null,
+        selection: $isRangeSelection(selection) ? selection : null
+      };
+    });
+
+    if (!selectedText || selectedText.trim() === '') {
+      toast.error("Please select some text to generate Smart Promo suggestions.");
+      return;
+    }
+
+    // Check if full text is selected
+    if (!isFullTextSelected(selectedText)) {
+      toast.error("Please select all text to use the Smart Promo feature.");
+      return;
+    }
+
+    if (!selection) {
+      toast.error("Invalid text selection.");
+      return;
+    }
+
+    setIsSmartPromoProcessing(true)
+    editor.setEditable(false)
+    
+    smartPromoAbortControllerRef.current = new AbortController()
+
+    try {
+        const response = await fetch('/api/promo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: selectedText }),
+            signal: smartPromoAbortControllerRef.current.signal,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || `Request failed with status ${response.status}`);
+        }
+
+        const { suggestions } = await response.json();
+
+        // Transform Smart Promo suggestions to unified format
+        const unifiedSuggestions = transformSmartPromoSuggestions(suggestions, selectedText, selection);
+        
+        // Add the suggestions to the unified suggestions state
+        if (onAddSuggestions) {
+          onAddSuggestions(unifiedSuggestions);
+        }
+
+        toast.success("Smart Promo suggestions generated successfully!");
+
+    } catch (error) {
+        if (error instanceof Error && error.name !== 'AbortError') {
+            toast.error("Failed to generate Smart Promo suggestions. Please try again.");
+            console.error(error);
+        }
+    } finally {
+        setIsSmartPromoProcessing(false)
+        editor.setEditable(true)
+        smartPromoAbortControllerRef.current = null
+    }
+  }, [editor, isPersonaProcessing, isEngageProcessing, isSmartPromoProcessing, isFullTextSelected, onAddSuggestions]);
 
   const handleCancel = useCallback(() => {
     personaAbortControllerRef.current?.abort()
     engageAbortControllerRef.current?.abort()
+    smartPromoAbortControllerRef.current?.abort()
     setIsPersonaProcessing(false)
     setIsEngageProcessing(false)
+    setIsSmartPromoProcessing(false)
     editor.setEditable(true)
   }, [editor]);
 
@@ -304,13 +391,15 @@ export function FloatingToolbarPlugin({ onRewrite, onAddSuggestions }: FloatingT
           <FloatingToolbar 
             onPersonaSelect={handlePersonaSelect} 
             onEngage={handleEngage}
+            onSmartPromo={handleSmartPromo}
             isPersonaLoading={isPersonaProcessing}
             isEngageLoading={isEngageProcessing}
+            isSmartPromoLoading={isSmartPromoProcessing}
           />
         </div>,
         document.body
       )}
-      <ProcessingModal isOpen={isPersonaProcessing || isEngageProcessing} onCancel={handleCancel} />
+      <ProcessingModal isOpen={isPersonaProcessing || isEngageProcessing || isSmartPromoProcessing} onCancel={handleCancel} />
     </>
   )
 } 

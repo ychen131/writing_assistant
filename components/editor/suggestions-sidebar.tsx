@@ -26,6 +26,9 @@ export function SuggestionsSidebar({
   const aiSuggestions = proposedSuggestions.filter(s => 
     s.type === "spelling" || s.type === "grammar" || s.type === "style"
   );
+  const smartPromoSuggestions = proposedSuggestions.filter(s => 
+    s.type === "smart-promo"
+  );
   
   const getTypeColor = (type: AISuggestion['type']) => {
     switch (type) {
@@ -39,6 +42,8 @@ export function SuggestionsSidebar({
       case "call-to-action":
       case "interactive-prompt":
         return "bg-yellow-100 text-yellow-800 border-yellow-200"
+      case "smart-promo":
+        return "bg-purple-100 text-purple-800 border-purple-200"
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
     }
@@ -54,6 +59,8 @@ export function SuggestionsSidebar({
       case "call-to-action":
       case "interactive-prompt":
         return "Engagement"
+      case "smart-promo":
+        return "Smart Promo"
       default:
         return type
     }
@@ -63,18 +70,55 @@ export function SuggestionsSidebar({
     return suggestion.type === "question" || suggestion.type === "call-to-action" || suggestion.type === "interactive-prompt"
   }
 
+  const isSmartPromoSuggestion = (suggestion: AISuggestion) => {
+    return suggestion.type === "smart-promo"
+  }
+
   const renderSuggestion = (s: AISuggestion) => (
     <li
       key={s.id}
       className={`p-2 rounded ${selectedId === String(s.id) ? "bg-blue-100" : "hover:bg-gray-200"} ${
         isEngagementSuggestion(s) ? "bg-yellow-50 border border-yellow-200" : ""
+      } ${
+        isSmartPromoSuggestion(s) ? "bg-purple-50 border border-purple-200" : ""
       }`}
     >
-      <div className="font-medium">{s.message}</div>
-      <div className="text-xs text-gray-500 mb-2">{s.suggested_text}</div>
-      <div className={`inline-block px-2 py-1 text-xs font-medium rounded border ${getTypeColor(s.type)} mb-2`}>
-        {getTypeLabel(s.type)}
+      {!isSmartPromoSuggestion(s) && <div className="font-medium">{s.message}</div>}
+      <div className={
+        isSmartPromoSuggestion(s)
+          ? "text-sm text-gray-700 mb-2"
+          : "text-xs text-gray-500 mb-2"
+      }>
+        {s.suggested_text}
       </div>
+      
+      {/* Badge Section */}
+      <div className="flex gap-2 mb-2">
+        {isSmartPromoSuggestion(s) ? (
+          <>
+            <div className={`inline-block px-2 py-1 text-xs font-medium rounded border ${getTypeColor(s.type)}`}>
+              {getTypeLabel(s.type)}
+            </div>
+            {s.strategy && (
+              <div className={`inline-block px-2 py-1 text-xs font-medium rounded border bg-purple-100 text-purple-800 border-purple-200`}>
+                {s.strategy}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className={`inline-block px-2 py-1 text-xs font-medium rounded border ${getTypeColor(s.type)}`}>
+            {getTypeLabel(s.type)}
+          </div>
+        )}
+      </div>
+      
+      {/* Explanation for Smart Promo suggestions */}
+      {s.explanation && (
+        <div className="text-xs text-gray-600 italic mb-2">
+          {s.explanation}
+        </div>
+      )}
+      
       <div className="flex gap-2">
         {isEngagementSuggestion(s) ? (
           <Button
@@ -115,10 +159,13 @@ export function SuggestionsSidebar({
       <h2 className="font-bold mb-4">Suggestions</h2>
       {proposedSuggestions.length === 0 && <div className="text-gray-500">No suggestions</div>}
       <ul className="space-y-2">
-        {/* Engagement suggestions first */}
+        {/* Smart Promo suggestions first */}
+        {smartPromoSuggestions.map(renderSuggestion)}
+        
+        {/* Engagement suggestions second */}
         {engagementSuggestions.map(renderSuggestion)}
         
-        {/* AI suggestions second */}
+        {/* AI suggestions third */}
         {aiSuggestions.map(renderSuggestion)}
       </ul>
     </aside>
