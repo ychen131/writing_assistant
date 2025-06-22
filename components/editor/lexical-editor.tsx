@@ -195,5 +195,5 @@ export function LexicalEditorComponent({
     </div>
   )
 }
-
 export const LexicalEditor = LexicalEditorComponent
+

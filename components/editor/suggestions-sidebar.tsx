@@ -114,23 +114,16 @@ export function SuggestionsSidebar({
   const renderSuggestionCard = (s: AISuggestion) => (
     <div
       key={s.id}
-      className={`p-4 rounded-lg border ${
+      className={`p-3 m-2 rounded-lg border ${
         selectedId === String(s.id)
           ? "bg-blue-50 border-blue-200"
           : "bg-white border-gray-200"
       }`}
     >
-      {!isSmartPromoSuggestion(s) && <div className="font-medium text-gray-800">{s.message}</div>}
-      <div className="text-sm text-gray-600 my-2">{s.suggested_text}</div>
+      <div className="text-md font-medium text-gray-8 00 my-2">{s.suggested_text}</div>
+      {!isSmartPromoSuggestion(s) && <div className="text-xs italic text-gray-600">{s.message}</div>}
 
       <div className="flex gap-2 mb-2">
-        <div
-          className={`inline-block px-2 py-1 text-xs font-medium rounded border ${getTypeColor(
-            s.type
-          )}`}
-        >
-          {getTypeLabel(s.type)}
-        </div>
         {s.strategy && (
           <div
             className={`inline-block px-2 py-1 text-xs font-medium rounded border bg-purple-100 text-purple-800 border-purple-200`}
@@ -146,12 +139,20 @@ export function SuggestionsSidebar({
         </div>
       )}
 
-      <div className="flex gap-2 mt-4">
+      <div className="flex gap-2 mt-4 flex-row-reverse">
+      <Button
+          variant="ghost"
+          size="sm"
+          className="bg-gray-200 hover:bg-gray-300 text-gray-800"
+          onClick={() => onIgnore(s.id)}
+        >
+          Ignore
+        </Button>
         {isEngagementSuggestion(s) ? (
           <Button
             variant="outline"
             size="sm"
-            className="flex-1"
+            className=""
             onClick={() => onAddEngagement?.(s)}
           >
             <Plus className="h-4 w-4 mr-1" />
@@ -161,22 +162,13 @@ export function SuggestionsSidebar({
           <Button
             variant="default"
             size="sm"
-            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+            className="bg-green-600 hover:bg-green-700 text-white"
             onClick={() => onAccept(s.id)}
           >
-            <Check className="h-4 w-4 mr-1" />
             Accept
           </Button>
         )}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="flex-1"
-          onClick={() => onIgnore(s.id)}
-        >
-          <X className="h-4 w-4 mr-1" />
-          Ignore
-        </Button>
+
       </div>
     </div>
   )

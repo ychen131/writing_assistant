@@ -35,8 +35,8 @@ export function EditorWorkspace({
   onAddEngagementSuggestion,
 }: EditorWorkspaceProps) {
   return (
-    <div className="flex gap-8 rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
-      <div className="flex-1">
+    <div className="flex gap-8">
+      <div className="flex-1 rounded-xl bg-white p-8 shadow-md border border-gray-200 ">
         <LexicalEditor
           onTextChange={onTextChange}
           suggestions={suggestions}
