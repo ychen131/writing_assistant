@@ -162,20 +162,14 @@
     @apply bg-gray-100 p-4 rounded-lg font-mono text-sm my-4 overflow-x-auto;
   }
 
-  /* Suggestion highlighting styles - using background colors */
-  .suggestion-highlight {
-    @apply transition-all duration-200;
+  /* Suggestion highlighting styles */
+  .underline-red {
+    text-decoration: underline;
+    text-decoration-color: red;
+    text-decoration-style: wavy;
   }
 
-  .suggestion-grammar {
-    @apply bg-blue-200;
-  }
-
-  .suggestion-spelling {
-    @apply bg-red-200;
-  }
-
-  .suggestion-style {
-    @apply bg-orange-200;
+  .highlight-green {
+    background-color: rgba(22, 163, 74, 0.15);
   }
 }

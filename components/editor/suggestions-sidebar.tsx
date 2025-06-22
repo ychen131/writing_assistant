@@ -1,36 +1,69 @@
 import type { AISuggestion } from "@/lib/types"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 import { Check, X, Plus } from "lucide-react"
 
 interface SuggestionsSidebarProps {
   suggestions: AISuggestion[]
   selectedId: string | null
-  onAccept: (index: number) => void
-  onIgnore: (index: number) => void
+  onAccept: (id: number) => void
+  onIgnore: (id: number) => void
   onAddEngagement?: (suggestion: AISuggestion) => void
 }
 
-export function SuggestionsSidebar({ 
-  suggestions, 
-  selectedId, 
+export function SuggestionsSidebar({
+  suggestions,
+  selectedId,
   onAccept,
   onIgnore,
-  onAddEngagement
+  onAddEngagement,
 }: SuggestionsSidebarProps) {
-  const proposedSuggestions = suggestions.filter(s => s.status === "proposed");
-  
-  // Separate engagement suggestions from AI suggestions
-  const engagementSuggestions = proposedSuggestions.filter(s => 
-    s.type === "question" || s.type === "call-to-action" || s.type === "interactive-prompt"
-  );
-  const aiSuggestions = proposedSuggestions.filter(s => 
-    s.type === "spelling" || s.type === "grammar" || s.type === "style"
-  );
-  const smartPromoSuggestions = proposedSuggestions.filter(s => 
-    s.type === "smart-promo"
-  );
-  
-  const getTypeColor = (type: AISuggestion['type']) => {
+  const proposedSuggestions = suggestions.filter((s) => s.status === "proposed")
+
+  const suggestionGroups = {
+    spelling: proposedSuggestions.filter((s) => s.type === "spelling"),
+    grammarAndStyle: proposedSuggestions.filter(
+      (s) => s.type === "grammar" || s.type === "style"
+    ),
+    engagement: proposedSuggestions.filter(
+      (s) =>
+        s.type === "question" ||
+        s.type === "call-to-action" ||
+        s.type === "interactive-prompt"
+    ),
+    smartPromo: proposedSuggestions.filter((s) => s.type === "smart-promo"),
+  }
+
+  const accordionSections = [
+    {
+      title: "Spelling",
+      suggestions: suggestionGroups.spelling,
+      variant: "destructive",
+    },
+    {
+      title: "Grammar & Style",
+      suggestions: suggestionGroups.grammarAndStyle,
+      variant: "default",
+    },
+    {
+      title: "Engagement Ideas",
+      suggestions: suggestionGroups.engagement,
+      variant: "default",
+    },
+    {
+      title: "Smart Promo",
+      suggestions: suggestionGroups.smartPromo,
+      variant: "default",
+    },
+  ].filter((section) => section.suggestions.length > 0)
+
+  const getTypeColor = (type: AISuggestion["type"]) => {
     switch (type) {
       case "spelling":
         return "bg-red-100 text-red-800 border-red-200"
@@ -49,7 +82,7 @@ export function SuggestionsSidebar({
     }
   }
 
-  const getTypeLabel = (type: AISuggestion['type']) => {
+  const getTypeLabel = (type: AISuggestion["type"]) => {
     switch (type) {
       case "spelling":
       case "grammar":
@@ -67,64 +100,58 @@ export function SuggestionsSidebar({
   }
 
   const isEngagementSuggestion = (suggestion: AISuggestion) => {
-    return suggestion.type === "question" || suggestion.type === "call-to-action" || suggestion.type === "interactive-prompt"
+    return (
+      suggestion.type === "question" ||
+      suggestion.type === "call-to-action" ||
+      suggestion.type === "interactive-prompt"
+    )
   }
-
+  
   const isSmartPromoSuggestion = (suggestion: AISuggestion) => {
     return suggestion.type === "smart-promo"
   }
 
-  const renderSuggestion = (s: AISuggestion, index: number) => (
-    <li
+  const renderSuggestionCard = (s: AISuggestion) => (
+    <div
       key={s.id}
-      className={`p-2 rounded ${selectedId === String(s.id) ? "bg-blue-100" : "hover:bg-gray-200"} ${
-        isEngagementSuggestion(s) ? "bg-yellow-50 border border-yellow-200" : ""
-      } ${
-        isSmartPromoSuggestion(s) ? "bg-purple-50 border border-purple-200" : ""
+      className={`p-4 rounded-lg border ${
+        selectedId === String(s.id)
+          ? "bg-blue-50 border-blue-200"
+          : "bg-white border-gray-200"
       }`}
     >
-      {!isSmartPromoSuggestion(s) && <div className="font-medium">{s.message}</div>}
-      <div className={
-        isSmartPromoSuggestion(s)
-          ? "text-sm text-gray-700 mb-2"
-          : "text-xs text-gray-500 mb-2"
-      }>
-        {s.suggested_text}
-      </div>
-      
-      {/* Badge Section */}
+      {!isSmartPromoSuggestion(s) && <div className="font-medium text-gray-800">{s.message}</div>}
+      <div className="text-sm text-gray-600 my-2">{s.suggested_text}</div>
+
       <div className="flex gap-2 mb-2">
-        {isSmartPromoSuggestion(s) ? (
-          <>
-            <div className={`inline-block px-2 py-1 text-xs font-medium rounded border ${getTypeColor(s.type)}`}>
-              {getTypeLabel(s.type)}
-            </div>
-            {s.strategy && (
-              <div className={`inline-block px-2 py-1 text-xs font-medium rounded border bg-purple-100 text-purple-800 border-purple-200`}>
-                {s.strategy}
-              </div>
-            )}
-          </>
-        ) : (
-          <div className={`inline-block px-2 py-1 text-xs font-medium rounded border ${getTypeColor(s.type)}`}>
-            {getTypeLabel(s.type)}
+        <div
+          className={`inline-block px-2 py-1 text-xs font-medium rounded border ${getTypeColor(
+            s.type
+          )}`}
+        >
+          {getTypeLabel(s.type)}
+        </div>
+        {s.strategy && (
+          <div
+            className={`inline-block px-2 py-1 text-xs font-medium rounded border bg-purple-100 text-purple-800 border-purple-200`}
+          >
+            {s.strategy}
           </div>
         )}
       </div>
-      
-      {/* Explanation for Smart Promo suggestions */}
+
       {s.explanation && (
-        <div className="text-xs text-gray-600 italic mb-2">
+        <div className="text-xs text-gray-500 italic mb-2">
           {s.explanation}
         </div>
       )}
-      
-      <div className="flex gap-2">
+
+      <div className="flex gap-2 mt-4">
         {isEngagementSuggestion(s) ? (
           <Button
             variant="outline"
             size="sm"
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+            className="flex-1"
             onClick={() => onAddEngagement?.(s)}
           >
             <Plus className="h-4 w-4 mr-1" />
@@ -132,9 +159,9 @@ export function SuggestionsSidebar({
           </Button>
         ) : (
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
-            className="flex-1"
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
             onClick={() => onAccept(s.id)}
           >
             <Check className="h-4 w-4 mr-1" />
@@ -148,37 +175,42 @@ export function SuggestionsSidebar({
           onClick={() => onIgnore(s.id)}
         >
           <X className="h-4 w-4 mr-1" />
-          {isEngagementSuggestion(s) ? "Ignore" : "Ignore"}
+          Ignore
         </Button>
       </div>
-    </li>
+    </div>
   )
 
   return (
-    <aside className="w-[30rem] p-4 border-l bg-gray-50 h-full">
-      <h2 className="font-bold mb-4">Suggestions</h2>
-      {proposedSuggestions.length === 0 && <div className="text-gray-500">No suggestions</div>}
-      <ul className="space-y-2">
-        {/* Render suggestions in the correct order while preserving the original index */}
-        {proposedSuggestions.map((s, index) => {
-          if (s.type === 'smart-promo') {
-            return renderSuggestion(s, index);
-          }
-          return null;
-        })}
-        {proposedSuggestions.map((s, index) => {
-          if (s.type === "question" || s.type === "call-to-action" || s.type === "interactive-prompt") {
-            return renderSuggestion(s, index);
-          }
-          return null;
-        })}
-        {proposedSuggestions.map((s, index) => {
-          if (s.type === "spelling" || s.type === "grammar" || s.type === "style") {
-            return renderSuggestion(s, index);
-          }
-          return null;
-        })}
-      </ul>
+    <aside className="w-[24rem]">
+      <h2 className="text-xl font-bold mb-4">Suggestions</h2>
+      {proposedSuggestions.length === 0 ? (
+        <div className="text-gray-500 text-center py-10">
+          No suggestions here. Keep writing!
+        </div>
+      ) : (
+        <Accordion type="single" collapsible className="w-full" defaultValue={accordionSections[0]?.title}>
+          {accordionSections.map((section) => (
+            <AccordionItem value={section.title} key={section.title}>
+              <AccordionTrigger className="text-base font-semibold">
+                <div className="flex items-center gap-3">
+                  {section.title}
+                  <Badge variant={section.variant === 'destructive' ? 'destructive' : 'secondary'} className="rounded-full">
+                    {section.suggestions.length}
+                  </Badge>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <ul className="space-y-3">
+                  {section.suggestions.map((s) => (
+                    <li key={s.id}>{renderSuggestionCard(s)}</li>
+                  ))}
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      )}
     </aside>
   )
 }

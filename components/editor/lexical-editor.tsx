@@ -26,6 +26,13 @@ function onError(error: Error) {
   console.error(error)
 }
 
+const initialConfig = {
+  namespace: "MyEditor",
+  theme,
+  onError,
+  nodes: [SuggestionDecoratorNode],
+}
+
 interface LexicalEditorProps {
   initialText: string
   needsSync: boolean
@@ -157,13 +164,6 @@ export function LexicalEditorComponent({
   }
 
   const [wordCount, setWordCount] = useState(0)
-
-  const initialConfig = {
-    namespace: "MyEditor",
-    theme,
-    onError,
-    nodes: [SuggestionDecoratorNode],
-  }
 
   return (
     <div className="editor-container">

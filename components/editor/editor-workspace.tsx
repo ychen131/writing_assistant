@@ -35,8 +35,8 @@ export function EditorWorkspace({
   onAddEngagementSuggestion,
 }: EditorWorkspaceProps) {
   return (
-    <main className="container mx-auto flex gap-4 py-4">
-      <div className="max-w-4xl mx-auto flex-1">
+    <div className="flex gap-8 rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
+      <div className="flex-1">
         <LexicalEditor
           onTextChange={onTextChange}
           suggestions={suggestions}
@@ -58,6 +58,6 @@ export function EditorWorkspace({
         onIgnore={ignoreSuggestion}
         onAddEngagement={onAddEngagementSuggestion}
       />
-    </main>
+    </div>
   )
 } 

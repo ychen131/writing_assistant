@@ -18,25 +18,27 @@ export class SuggestionDecoratorNode extends TextNode {
     }
   
     createDOM(config: EditorConfig): HTMLElement {
-      // const element = document.createElement("span")
-  
-      // Apply different background colors based on suggestion type
-      const getBackgroundColor = (type: "spelling" | "grammar" | "style") => {
+      const element = super.createDOM(config)
+
+      const getHighlightClassName = (type: string) => {
         switch (type) {
           case "spelling":
-            return "bg-red-200"
+            return "underline-red"
           case "grammar":
-            return "bg-blue-200"
           case "style":
-            return "bg-orange-200"
+            return "highlight-green"
           default:
-            return "bg-gray-200"
+            return "" // No highlight for other types
         }
       }
-  
-      const suggestionType = this.__suggestion.type as "spelling" | "grammar" | "style"
-      const element = super.createDOM(config);
-      element.className = `suggestion-highlight ${getBackgroundColor(suggestionType)} px-1 rounded hover:opacity-80 transition-opacity`
+
+      const suggestionType = this.__suggestion.type
+      const highlightClass = getHighlightClassName(suggestionType)
+
+      if (highlightClass) {
+        element.className = `${highlightClass} cursor-pointer`
+      }
+
       return element
     }
   

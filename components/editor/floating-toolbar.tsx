@@ -93,53 +93,57 @@ export function FloatingToolbar({
   }
 
   return (
-    <div className="flex items-center gap-1 bg-background border border-border rounded-md shadow-lg p-1">
+    <div className="flex items-center gap-1 rounded-lg bg-dark-charcoal p-1 shadow-lg">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 px-3 text-sm font-medium"
+            className="h-8 px-3 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
             disabled={isEngageLoading || isSmartPromoLoading}
           >
-            <Sparkles className="h-4 w-4 mr-1" />
-            Persona
-            <ChevronDown className="h-4 w-4 ml-1 opacity-50" />
+            <Sparkles className="h-4 w-4 mr-2" />
+            <span>Persona</span>
+            <ChevronDown className="h-4 w-4 ml-2 opacity-60" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48">
+        <DropdownMenuContent align="start" className="w-48 bg-dark-charcoal text-gray-300 border-gray-700">
           {PERSONA_OPTIONS.map((option) => (
             <DropdownMenuItem
               key={option.value}
               onClick={() => handlePersonaSelect(option.value)}
-              className="cursor-pointer"
+              className="cursor-pointer hover:bg-gray-700 hover:text-white"
             >
               {option.label}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-      
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-8 px-3 text-sm font-medium"
-        onClick={handleEngage}
-        disabled={isPersonaLoading || isSmartPromoLoading}
-      >
-        <MessageCircle className="h-4 w-4 mr-1" />
-        Engage
-      </Button>
+
+      <div className="h-5 w-px bg-gray-600" />
 
       <Button
         variant="ghost"
         size="sm"
-        className="h-8 px-3 text-sm font-medium"
+        className="h-8 px-3 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
+        onClick={handleEngage}
+        disabled={isPersonaLoading || isSmartPromoLoading}
+      >
+        <MessageCircle className="h-4 w-4 mr-2" />
+        <span>Engage</span>
+      </Button>
+
+      <div className="h-5 w-px bg-gray-600" />
+
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 px-3 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
         onClick={handleSmartPromo}
         disabled={isPersonaLoading || isEngageLoading}
       >
-        <Megaphone className="h-4 w-4 mr-1" />
-        Smart Promo
+        <Megaphone className="h-4 w-4 mr-2" />
+        <span>Smart Promo</span>
       </Button>
     </div>
   )

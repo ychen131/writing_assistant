@@ -104,7 +104,7 @@ export default function EditorPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen">
         <Header />
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
@@ -117,49 +117,53 @@ export default function EditorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       <Header />
       
-      <DocumentHeader
-        // document metadata sync with DB
-        title={title}
-        onTitleChange={updateTitle}
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <DocumentHeader
+          // document metadata sync with DB
+          title={title}
+          onTitleChange={updateTitle}
 
-        // for displaying status indicators
-        isSaving={isSaving}
-        lastSaved={lastSaved}
-        isAnalyzing={isAnalyzing}
-        suggestionsCount={suggestions.filter(s => s.status === 'proposed').length}
+          // for displaying status indicators
+          isSaving={isSaving}
+          lastSaved={lastSaved}
+          isAnalyzing={isAnalyzing}
+          suggestionsCount={suggestions.filter(s => s.status === 'proposed').length}
 
-        // propagated through for managing document versions
-        documentId={documentId}
-        currentContent={textContent}
-        updateTextContent={updateTextAndSync}
-      />
+          // propagated through for managing document versions
+          documentId={documentId}
+          currentContent={textContent}
+          updateTextContent={updateTextAndSync}
+        />
 
-      <EditorWorkspace
-        textContent={textContent}
-        onTextChange={(text) => {
-          if(text !== lastAcceptedSuggestion) {
-            // Trigger analysis immediately - the hook will handle debouncing and cancellation
-            triggerAnalysis(text)
-          }
-          updateTextContent(text)
-        }}
-        suggestions={suggestions}
-        selectedSuggestionId={selectedSuggestionId}
-        onSuggestionClick={setSelectedSuggestionId}
-        acceptSuggestion={handleAcceptSuggestion}
-        ignoreSuggestion={ignoreSuggestion}
-        needsSync={needsSync}
-        setSynced={setSynced}
-        onRewrite={(originalText: string, rewrittenText: string) => {
-          const newText = textContent.replace(originalText, rewrittenText);
-          updateTextAndSync(newText);
-        }}
-        onAddSuggestions={handleAddSuggestions}
-        onAddEngagementSuggestion={handleAddEngagementSuggestion}
-      />
+        <div className="mt-6">
+          <EditorWorkspace
+            textContent={textContent}
+            onTextChange={(text) => {
+              if(text !== lastAcceptedSuggestion) {
+                // Trigger analysis immediately - the hook will handle debouncing and cancellation
+                triggerAnalysis(text)
+              }
+              updateTextContent(text)
+            }}
+            suggestions={suggestions}
+            selectedSuggestionId={selectedSuggestionId}
+            onSuggestionClick={setSelectedSuggestionId}
+            acceptSuggestion={handleAcceptSuggestion}
+            ignoreSuggestion={ignoreSuggestion}
+            needsSync={needsSync}
+            setSynced={setSynced}
+            onRewrite={(originalText: string, rewrittenText: string) => {
+              const newText = textContent.replace(originalText, rewrittenText);
+              updateTextAndSync(newText);
+            }}
+            onAddSuggestions={handleAddSuggestions}
+            onAddEngagementSuggestion={handleAddEngagementSuggestion}
+          />
+        </div>
+      </main>
     </div>
   )
 }
