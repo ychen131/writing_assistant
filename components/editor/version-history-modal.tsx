@@ -38,7 +38,8 @@ interface VersionHistoryModalProps {
   documentTitle: string
   currentContent: string
   onRestore?: (content: string) => void
-  onVersionCreate?: () => void
+  isOpen: boolean
+  onOpenChange: (isOpen: boolean) => void
 }
 
 export function VersionHistoryModal({
@@ -46,9 +47,9 @@ export function VersionHistoryModal({
   documentTitle,
   currentContent,
   onRestore,
-
+  isOpen,
+  onOpenChange,
 }: VersionHistoryModalProps) {
-  const [isOpen, setIsOpen] = useState(false)
   const [isCreatingSnapshot, setIsCreatingSnapshot] = useState(false)
   const [deleteVersion, setDeleteVersion] = useState<any>(null)
   
@@ -76,6 +77,7 @@ export function VersionHistoryModal({
     setIsCreatingSnapshot(true)
     try {
       await createVersion(currentContent, true, `Manual snapshot: ${documentTitle}`)
+      fetchVersions() // refetch to show the new snapshot
     } catch (error) {
       console.error('Error creating snapshot:', error)
     } finally {
@@ -86,7 +88,7 @@ export function VersionHistoryModal({
   const handleRestoreVersion = async (versionId: string) => {
     try {
       await restoreVersion(versionId)
-      setIsOpen(false) // Close modal after restore
+      onOpenChange(false) // Close modal after restore
     } catch (error) {
       console.error('Error restoring version:', error)
     }
@@ -117,36 +119,7 @@ export function VersionHistoryModal({
 
   return (
     <>
-      {/* Clock Icon and Take Snapshot Buttons */}
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsOpen(true)}
-          className="h-8 w-8 p-0"
-          title="Version History"
-        >
-          <Clock className="h-4 w-4" />
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleCreateSnapshot}
-          disabled={isCreatingSnapshot}
-          className="h-8"
-        >
-          {isCreatingSnapshot ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
-          ) : (
-            <Plus className="h-4 w-4 mr-2" />
-          )}
-          Take Snapshot
-        </Button>
-      </div>
-
-      {/* Version History Modal */}
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <div className="flex items-center justify-between">
@@ -156,17 +129,32 @@ export function VersionHistoryModal({
                   Version History
                 </DialogTitle>
                 <DialogDescription>
-                  View and manage document versions
+                  View and manage document versions. You can also create a new snapshot.
                 </DialogDescription>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsOpen(false)}
-                className="h-8 w-8 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCreateSnapshot}
+                  disabled={isCreatingSnapshot}
+                >
+                  {isCreatingSnapshot ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
+                  ) : (
+                    <Plus className="h-4 w-4 mr-2" />
+                  )}
+                  Create Snapshot
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                  className="h-8 w-8 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </DialogHeader>
 

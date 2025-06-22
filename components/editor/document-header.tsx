@@ -3,14 +3,24 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Save, CheckCircle } from "lucide-react"
+import { ArrowLeft, Save, CheckCircle, Clock, Plus } from "lucide-react"
 import Link from "next/link"
 import { VersionHistoryModal } from "./version-history-modal"
-import { useCallback } from "react"
+import { useCallback, useState } from "react"
+import Image from "next/image"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useDocumentVersions } from "@/hooks/use-document-versions"
 
 interface DocumentHeaderProps {
   title: string
-  onTitleChange: (title: string) => void
   isSaving: boolean
   lastSaved: Date | null
   isAnalyzing: boolean
@@ -22,7 +32,6 @@ interface DocumentHeaderProps {
 
 export function DocumentHeader({
   title,
-  onTitleChange,
   isSaving,
   lastSaved,
   isAnalyzing,
@@ -31,32 +40,78 @@ export function DocumentHeader({
   currentContent,
   updateTextContent,
 }: DocumentHeaderProps) {
-    // Handle version restore
-    const handleVersionRestore = useCallback((restoredText: string) => {
-      updateTextContent(restoredText)
-    }, [updateTextContent])
-  
+  // Handle version restore
+  const handleVersionRestore = useCallback((restoredText: string) => {
+    updateTextContent(restoredText)
+  }, [updateTextContent])
+
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
+  const [isCreatingSnapshot, setIsCreatingSnapshot] = useState(false)
+
+  const { createVersion } = useDocumentVersions({ documentId })
+
+  const handleTakeSnapshot = async () => {
+    setIsCreatingSnapshot(true)
+    try {
+      await createVersion(
+        currentContent,
+        true,
+        `Manual snapshot: ${title || "Untitled Document"}`
+      )
+    } catch (error) {
+      console.error("Error creating snapshot:", error)
+    } finally {
+      setIsCreatingSnapshot(false)
+      setIsHistoryModalOpen(true) // Open history modal after snapshot
+    }
+  }
 
   return (
-    <div className="border-b bg-gray-50 px-4 py-3">
+    <div className="border-b bg-green-50/50 border-green-200 px-4 py-3">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Documents
-            </Button>
-          </Link>
-
-          <Input
-            value={title}
-            onChange={(e) => onTitleChange(e.target.value)}
-            className="text-lg font-semibold border-none bg-transparent px-0 focus-visible:ring-0"
-            placeholder="Document title..."
-          />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <div className="flex items-center gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-7 w-7 text-green-600"
+                  >
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <path d="m9 15 2 2 4-4"></path>
+                  </svg>
+                  <span className="text-xl font-bold text-[#101827]">WordWise</span>
+                </div>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href="/dashboard" className="text-slate-600">
+                    Documents
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage className="text-slate-900 text-lg">
+                  {title || "Untitled Document"}
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           {isAnalyzing && (
             <Badge variant="secondary" className="animate-pulse">
               Analyzing...
@@ -64,28 +119,48 @@ export function DocumentHeader({
           )}
 
           {suggestionsCount > 0 && (
-            <Badge variant="outline">
+            <Badge variant="outline" className="bg-gray-50 text-gray-600">
               {suggestionsCount} suggestion{suggestionsCount !== 1 ? "s" : ""}
             </Badge>
           )}
 
           {isSaving ? (
-            <Badge variant="secondary">
-              <Save className="h-3 w-3 mr-1 animate-spin" />
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Save className="h-4 w-4 animate-spin" />
               Saving...
-            </Badge>
+            </div>
           ) : lastSaved ? (
-            <Badge variant="outline">
-              <CheckCircle className="h-3 w-3 mr-1" />
+            <div className="flex items-center gap-2 text-sm text-green-700 font-medium">
+              <CheckCircle className="h-4 w-4" />
               Saved
-            </Badge>
+            </div>
           ) : null}
+
+          <Button
+            variant="outline"
+            className="bg-white border-gray-300"
+            onClick={handleTakeSnapshot}
+            disabled={isCreatingSnapshot}
+          >
+            {isCreatingSnapshot ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
+            ) : (
+             null
+            )}
+            Take Snapshot
+          </Button>
+
+          <Avatar>
+            <AvatarFallback className="bg-green-600 text-white">Y</AvatarFallback>
+          </Avatar>
 
           <VersionHistoryModal
             documentId={documentId}
             documentTitle={title || "Untitled Document"}
             currentContent={currentContent}
             onRestore={handleVersionRestore}
+            isOpen={isHistoryModalOpen}
+            onOpenChange={setIsHistoryModalOpen}
           />
         </div>
       </div>
