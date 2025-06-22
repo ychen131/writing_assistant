@@ -1,0 +1,62 @@
+### Test Smart Promo API - Valid Request (Mock)
+POST http://localhost:3000/api/promo
+Content-Type: application/json
+
+{
+  "text": "This is a sample promotional text about our amazing product. Buy now and get 50% off! Limited time offer! Don't miss out!"
+}
+
+### Test Smart Promo API - Live AI - Product Promotion
+POST http://localhost:3000/api/promo
+Content-Type: application/json
+
+{
+  "text": "Our revolutionary productivity app will transform your workflow! With cutting-edge AI technology and seamless integration, you'll never miss a deadline again. Download now and join thousands of satisfied users who have already improved their efficiency by 300%!"
+}
+
+### Test Smart Promo API - Live AI - Service Promotion
+POST http://localhost:3000/api/promo
+Content-Type: application/json
+
+{
+  "text": "Looking for the best coffee in town? Our premium coffee shop offers the finest beans from around the world! With our expert baristas and cozy atmosphere, you'll experience coffee like never before. Visit us today and taste the difference!"
+}
+
+### Test Smart Promo API - Live AI - Short Text
+POST http://localhost:3000/api/promo
+Content-Type: application/json
+
+{
+  "text": "Buy our product now!"
+}
+
+### Test Smart Promo API - Missing Text
+POST http://localhost:3000/api/promo
+Content-Type: application/json
+
+{}
+
+### Test Smart Promo API - Empty Text
+POST http://localhost:3000/api/promo
+Content-Type: application/json
+
+{
+  "text": ""
+}
+
+### Test Smart Promo API - Whitespace Only
+POST http://localhost:3000/api/promo
+Content-Type: application/json
+
+{
+  "text": "   "
+}
+
+### Test Smart Promo API - Invalid JSON
+POST http://localhost:3000/api/promo
+Content-Type: application/json
+
+{
+  "text": "This is valid text",
+  "extra": "field"
+} 
