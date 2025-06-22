@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Save, CheckCircle, Clock, Plus } from "lucide-react"
+import { ArrowLeft, Save, CheckCircle, Clock, Plus, History } from "lucide-react"
 import Link from "next/link"
 import { VersionHistoryModal } from "./version-history-modal"
 import { useCallback, useState, useEffect } from "react"
@@ -194,6 +194,14 @@ export function DocumentHeader({
              null
             )}
             Take Snapshot
+          </Button>
+
+          <Button
+            variant="outline"
+            className="bg-white border-gray-300"
+            onClick={() => setIsHistoryModalOpen(true)}
+          >
+            <Clock className="h-4 w-4" />
           </Button>
 
           <Avatar>
