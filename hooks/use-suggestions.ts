@@ -225,8 +225,15 @@ export function useSuggestions(): UseSuggestionsReturn {
 
     // console.log("applied suggestion", newText)
     
-    // Mark suggestion as accepted
-    setSuggestions(prev => prev.map((s, i) => i === index ? { ...s, status: "accepted" } : s))
+    // Update suggestions state
+    if (suggestion.type === 'smart-promo') {
+      // If it's a smart promo, remove all smart promo suggestions
+      setSuggestions(prev => prev.filter(s => s.type !== 'smart-promo'));
+    } else {
+      // Otherwise, just mark the current one as accepted
+      setSuggestions(prev => prev.map((s, i) => i === index ? { ...s, status: "accepted" } : s))
+    }
+
     setSelectedSuggestionId(null)
     
     return newText

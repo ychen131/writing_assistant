@@ -74,7 +74,7 @@ export function SuggestionsSidebar({
     return suggestion.type === "smart-promo"
   }
 
-  const renderSuggestion = (s: AISuggestion) => (
+  const renderSuggestion = (s: AISuggestion, index: number) => (
     <li
       key={s.id}
       className={`p-2 rounded ${selectedId === String(s.id) ? "bg-blue-100" : "hover:bg-gray-200"} ${
@@ -135,7 +135,7 @@ export function SuggestionsSidebar({
             variant="outline"
             size="sm"
             className="flex-1"
-            onClick={() => onAccept(s.id)}
+            onClick={() => onAccept(index)}
           >
             <Check className="h-4 w-4 mr-1" />
             Accept
@@ -145,7 +145,7 @@ export function SuggestionsSidebar({
           variant="ghost"
           size="sm"
           className="flex-1"
-          onClick={() => onIgnore(s.id)}
+          onClick={() => onIgnore(index)}
         >
           <X className="h-4 w-4 mr-1" />
           {isEngagementSuggestion(s) ? "Ignore" : "Ignore"}
@@ -159,14 +159,25 @@ export function SuggestionsSidebar({
       <h2 className="font-bold mb-4">Suggestions</h2>
       {proposedSuggestions.length === 0 && <div className="text-gray-500">No suggestions</div>}
       <ul className="space-y-2">
-        {/* Smart Promo suggestions first */}
-        {smartPromoSuggestions.map(renderSuggestion)}
-        
-        {/* Engagement suggestions second */}
-        {engagementSuggestions.map(renderSuggestion)}
-        
-        {/* AI suggestions third */}
-        {aiSuggestions.map(renderSuggestion)}
+        {/* Render suggestions in the correct order while preserving the original index */}
+        {proposedSuggestions.map((s, index) => {
+          if (s.type === 'smart-promo') {
+            return renderSuggestion(s, index);
+          }
+          return null;
+        })}
+        {proposedSuggestions.map((s, index) => {
+          if (s.type === "question" || s.type === "call-to-action" || s.type === "interactive-prompt") {
+            return renderSuggestion(s, index);
+          }
+          return null;
+        })}
+        {proposedSuggestions.map((s, index) => {
+          if (s.type === "spelling" || s.type === "grammar" || s.type === "style") {
+            return renderSuggestion(s, index);
+          }
+          return null;
+        })}
       </ul>
     </aside>
   )
