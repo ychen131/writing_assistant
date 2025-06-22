@@ -117,13 +117,6 @@ export function FloatingToolbarPlugin({ onRewrite, onAddSuggestions }: FloatingT
     const normalizedSelected = normalize(selectedText);
     const normalizedFull = normalize(fullText);
 
-    console.log("--------------------------------");
-    console.log("isFullTextSelected check:");
-    console.log("Selected (normalized):", JSON.stringify(normalizedSelected));
-    console.log("Full (normalized):", JSON.stringify(normalizedFull));
-    console.log("Result:", normalizedSelected === normalizedFull);
-    console.log("--------------------------------");
-
     return normalizedSelected === normalizedFull
   }, [editor])
 
@@ -329,7 +322,6 @@ export function FloatingToolbarPlugin({ onRewrite, onAddSuggestions }: FloatingT
       }
 
       const selectedText = selection.getTextContent();
-      console.log("Inside updateToolbarPosition. Selected text is:", `"${selectedText}"`);
       
       // Only show toolbar if full text is selected
       if (!isFullTextSelected(selectedText)) {
