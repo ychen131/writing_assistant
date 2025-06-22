@@ -45,7 +45,7 @@ export async function middleware(request: NextRequest) {
     // Protect routes that require authentication
     if (
       !user &&
-      (request.nextUrl.pathname === "/" || 
+      (
        request.nextUrl.pathname.startsWith("/dashboard") || 
        request.nextUrl.pathname.startsWith("/editor"))
     ) {
