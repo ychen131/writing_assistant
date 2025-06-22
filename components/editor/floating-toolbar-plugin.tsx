@@ -111,10 +111,19 @@ export function FloatingToolbarPlugin({ onRewrite, onAddSuggestions }: FloatingT
       return editor.getRootElement()?.textContent || ''
     })
     
-    // Allow for minor differences (whitespace, line breaks)
-    const normalizedSelected = selectedText.trim().replace(/\s+/g, ' ')
-    const normalizedFull = fullText.trim().replace(/\s+/g, ' ')
-    
+    // A more aggressive normalization to remove all whitespace, including newlines.
+    const normalize = (text: string) => text.replace(/\s/g, '');
+
+    const normalizedSelected = normalize(selectedText);
+    const normalizedFull = normalize(fullText);
+
+    console.log("--------------------------------");
+    console.log("isFullTextSelected check:");
+    console.log("Selected (normalized):", JSON.stringify(normalizedSelected));
+    console.log("Full (normalized):", JSON.stringify(normalizedFull));
+    console.log("Result:", normalizedSelected === normalizedFull);
+    console.log("--------------------------------");
+
     return normalizedSelected === normalizedFull
   }, [editor])
 
@@ -320,6 +329,7 @@ export function FloatingToolbarPlugin({ onRewrite, onAddSuggestions }: FloatingT
       }
 
       const selectedText = selection.getTextContent();
+      console.log("Inside updateToolbarPosition. Selected text is:", `"${selectedText}"`);
       
       // Only show toolbar if full text is selected
       if (!isFullTextSelected(selectedText)) {

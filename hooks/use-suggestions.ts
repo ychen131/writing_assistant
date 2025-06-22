@@ -212,28 +212,28 @@ export function useSuggestions(): UseSuggestionsReturn {
     const suggestion = suggestions[index]
     if (!suggestion) return currentText
 
+    let newText = currentText;
 
-    // const closestMatch = matches.sort((a, b) => Math.abs(a - suggestion.start_index) - Math.abs(b - suggestion.start_index))[0]
-    const closestMatch = fuzzyMatch(currentText, suggestion.original_text, suggestion.start_index)
-    if(closestMatch === -1) {
-      console.log("no match found for suggestion", suggestion)
-      return currentText
-    }
-    const beforeText = currentText.substring(0, closestMatch)
-    const afterText = currentText.substring(closestMatch + suggestion.original_text.length)
-    const newText = beforeText + suggestion.suggested_text + afterText
-
-    // console.log("applied suggestion", newText)
-    
-    // Update suggestions state
+    // Special, more robust handling for Smart Promo
     if (suggestion.type === 'smart-promo') {
+      newText = suggestion.suggested_text;
       // If it's a smart promo, remove all smart promo suggestions
       setSuggestions(prev => prev.filter(s => s.type !== 'smart-promo'));
     } else {
-      // Otherwise, just mark the current one as accepted
+      // Existing logic for other suggestion types
+      const closestMatch = fuzzyMatch(currentText, suggestion.original_text, suggestion.start_index)
+      if(closestMatch === -1) {
+        console.log("no match found for suggestion", suggestion)
+        return currentText
+      }
+      const beforeText = currentText.substring(0, closestMatch)
+      const afterText = currentText.substring(closestMatch + suggestion.original_text.length)
+      newText = beforeText + suggestion.suggested_text + afterText
+      
+      // Mark the current one as accepted
       setSuggestions(prev => prev.map((s, i) => i === index ? { ...s, status: "accepted" } : s))
     }
-
+    
     setSelectedSuggestionId(null)
     
     return newText
