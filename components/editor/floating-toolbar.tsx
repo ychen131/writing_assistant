@@ -93,13 +93,13 @@ export function FloatingToolbar({
   }
 
   return (
-    <div className="flex items-center gap-1 rounded-lg bg-dark-charcoal p-1 shadow-lg">
+    <div className="flex items-center gap-1 rounded-lg bg-white p-1 shadow-lg border border-gray-200">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 px-3 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
+            className="h-8 px-3 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
             disabled={isEngageLoading || isSmartPromoLoading}
           >
             <Sparkles className="h-4 w-4 mr-2" />
@@ -107,12 +107,12 @@ export function FloatingToolbar({
             <ChevronDown className="h-4 w-4 ml-2 opacity-60" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48 bg-dark-charcoal text-gray-300 border-gray-700">
+        <DropdownMenuContent align="start" className="w-48 bg-white text-gray-700 border-gray-200">
           {PERSONA_OPTIONS.map((option) => (
             <DropdownMenuItem
               key={option.value}
               onClick={() => handlePersonaSelect(option.value)}
-              className="cursor-pointer hover:bg-gray-700 hover:text-white"
+              className="cursor-pointer hover:bg-gray-100 hover:text-gray-900"
             >
               {option.label}
             </DropdownMenuItem>
@@ -120,12 +120,12 @@ export function FloatingToolbar({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <div className="h-5 w-px bg-gray-600" />
+      <div className="h-5 w-px bg-gray-300" />
 
       <Button
         variant="ghost"
         size="sm"
-        className="h-8 px-3 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
+        className="h-8 px-3 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
         onClick={handleEngage}
         disabled={isPersonaLoading || isSmartPromoLoading}
       >
@@ -138,7 +138,7 @@ export function FloatingToolbar({
       <Button
         variant="ghost"
         size="sm"
-        className="h-8 px-3 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
+        className="h-8 px-3 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
         onClick={handleSmartPromo}
         disabled={isPersonaLoading || isEngageLoading}
       >
