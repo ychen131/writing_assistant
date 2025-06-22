@@ -170,10 +170,18 @@ export function useSuggestions(): UseSuggestionsReturn {
     // Mark that user is actively typing
     isUserTyping.current = true
 
-    // Cancel any pending analysis
+    // Cancel any pending analysis timeout
     if (analysisTimeoutId.current) {
       clearTimeout(analysisTimeoutId.current)
       analysisTimeoutId.current = null
+    }
+
+    // Cancel any in-flight analysis since user is typing again
+    if (currentAnalysisRequest.current) {
+      console.log("User started typing again, cancelling in-flight analysis")
+      currentAnalysisRequest.current.abort()
+      currentAnalysisRequest.current = null
+      setIsAnalyzing(false)
     }
 
     // Don't analyze if text is too short
