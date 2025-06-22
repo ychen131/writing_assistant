@@ -89,9 +89,11 @@ export function SuggestionsSidebar({
       case "style":
         return type.charAt(0).toUpperCase() + type.slice(1)
       case "question":
+        return "Question"
       case "call-to-action":
+        return "Call to Action"
       case "interactive-prompt":
-        return "Engagement"
+        return "Prompt"
       case "smart-promo":
         return "Smart Promo"
       default:
@@ -106,7 +108,7 @@ export function SuggestionsSidebar({
       suggestion.type === "interactive-prompt"
     )
   }
-  
+
   const isSmartPromoSuggestion = (suggestion: AISuggestion) => {
     return suggestion.type === "smart-promo"
   }
@@ -114,14 +116,24 @@ export function SuggestionsSidebar({
   const renderSuggestionCard = (s: AISuggestion) => (
     <div
       key={s.id}
-      className={`p-3 m-2 rounded-lg border ${
-        selectedId === String(s.id)
-          ? "bg-blue-50 border-blue-200"
-          : "bg-white border-gray-200"
-      }`}
+      className={`p-3 m-2 rounded-lg border ${selectedId === String(s.id)
+        ? "bg-blue-50 border-blue-200"
+        : "bg-white border-gray-200"
+        }`}
     >
       <div className="text-md font-medium text-gray-8 00 my-2">{s.suggested_text}</div>
-      {!isSmartPromoSuggestion(s) && <div className="text-xs italic text-gray-600">{s.message}</div>}
+      {
+        isEngagementSuggestion(s) ? (
+          <div
+            className={`inline-block px-2 py-1 text-xs font-medium rounded border ${getTypeColor(
+              s.type
+            )}`}
+          >
+            {getTypeLabel(s.type)}
+          </div>
+        ) :
+          (!isSmartPromoSuggestion(s) && <div className="text-xs italic text-gray-600">{s.message}</div>)
+      }
 
       <div className="flex gap-2 mb-2">
         {s.strategy && (
@@ -140,7 +152,7 @@ export function SuggestionsSidebar({
       )}
 
       <div className="flex gap-2 mt-4 flex-row-reverse">
-      <Button
+        <Button
           variant="ghost"
           size="sm"
           className="bg-gray-200 hover:bg-gray-300 text-gray-800"
@@ -150,12 +162,11 @@ export function SuggestionsSidebar({
         </Button>
         {isEngagementSuggestion(s) ? (
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
-            className=""
+            className="bg-green-600 hover:bg-green-700 text-white"
             onClick={() => onAddEngagement?.(s)}
           >
-            <Plus className="h-4 w-4 mr-1" />
             Add
           </Button>
         ) : (
