@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { FileText, Plus, MoreVertical, Pencil, Trash2, Calendar } from "lucide-react"
+import { FileText, Plus, MoreVertical, Pencil, Trash2, Calendar, LayoutGrid, List } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import Link from "next/link"
 import { InspirationModal } from "@/components/editor/inspiration-modal"
@@ -29,6 +29,7 @@ export function DocumentList() {
   const [editingTitle, setEditingTitle] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState("")
   const [isInspirationModalOpen, setIsInspirationModalOpen] = useState(false)
+  const [view, setView] = useState("grid")
   const supabase = createClient()
 
   useEffect(() => {
@@ -141,10 +142,30 @@ export function DocumentList() {
             {documents.length} {documents.length === 1 ? "document" : "documents"}
           </p>
         </div>
-        <Button onClick={handleOpenInspirationModal} className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700">
-          <Plus className="h-4 w-4" />
-          New Document
-        </Button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1 rounded-md bg-gray-200 p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setView("grid")}
+              className={`rounded px-3 py-1 text-sm font-medium transition-colors ${view === 'grid' ? 'bg-primary text-primary-foreground' : 'text-gray-600 hover:bg-gray-300'}`}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setView("list")}
+              className={`rounded px-3 py-1 text-sm font-medium transition-colors ${view === 'list' ? 'bg-primary text-primary-foreground' : 'text-gray-600 hover:bg-gray-300'}`}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button onClick={handleOpenInspirationModal} className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4" />
+            New Document
+          </Button>
+        </div>
       </div>
 
       {documents.length === 0 ? (
@@ -162,82 +183,116 @@ export function DocumentList() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {documents.map((doc) => (
-            <Card key={doc.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    {editingTitle === doc.id ? (
-                      <Input
-                        value={newTitle}
-                        onChange={(e) => setNewTitle(e.target.value)}
-                        onBlur={() => {
-                          if (newTitle.trim()) {
-                            handleRenameDocument(doc.id, newTitle.trim())
-                          } else {
-                            setEditingTitle(null)
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            if (newTitle.trim()) {
-                              handleRenameDocument(doc.id, newTitle.trim())
-                            } else {
-                              setEditingTitle(null)
-                            }
-                          } else if (e.key === "Escape") {
-                            setEditingTitle(null)
-                          }
-                        }}
-                        className="text-lg font-semibold"
-                        autoFocus
-                      />
-                    ) : (
-                      <CardTitle className="text-lg truncate">{doc.title}</CardTitle>
-                    )}
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreVertical className="h-4 w-4" />
+        <div>
+          {view === "grid" && (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {documents.map((doc) => (
+                <Card key={doc.id} className="flex flex-col hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        {editingTitle === doc.id ? (
+                          <Input
+                            value={newTitle}
+                            onChange={(e) => setNewTitle(e.target.value)}
+                            onBlur={() => {
+                              if (newTitle.trim()) {
+                                handleRenameDocument(doc.id, newTitle.trim())
+                              } else {
+                                setEditingTitle(null)
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                if (newTitle.trim()) {
+                                  handleRenameDocument(doc.id, newTitle.trim())
+                                } else {
+                                  setEditingTitle(null)
+                                }
+                              } else if (e.key === "Escape") {
+                                setEditingTitle(null)
+                              }
+                            }}
+                            className="text-lg font-semibold"
+                            autoFocus
+                          />
+                        ) : (
+                          <CardTitle className="text-lg truncate">{doc.title}</CardTitle>
+                        )}
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setTimeout(() => {
+                                setEditingTitle(doc.id)
+                                setNewTitle(doc.title)
+                              }, 100)
+                            }}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Rename
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setDeleteDocument(doc)} className="text-red-600">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0 flex-grow flex flex-col justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 line-clamp-2 mb-3 h-[40px]">
+                        {doc.plain_text_content || "No content yet..."}
+                      </p>
+                      <div className="flex items-center text-sm text-gray-500 mb-3">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        {formatDistanceToNow(new Date(doc.updated_at), { addSuffix: true })}
+                      </div>
+                    </div>
+                    <Link href={`/editor/${doc.id}`} className="block mt-auto">
+                      <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/5">
+                        Open Document
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setTimeout(() => {
-                            setEditingTitle(doc.id)
-                            setNewTitle(doc.title)
-                          }, 100)
-                        }}
-                      >
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Rename
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setDeleteDocument(doc)} className="text-red-600">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
-                  <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-1" />
+                    </Link>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {view === "list" && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-12 gap-4 px-4 py-2 font-medium text-sm text-gray-500 border-b">
+                <div className="col-span-5">Title</div>
+                <div className="col-span-4">Preview</div>
+                <div className="col-span-2">Last Updated</div>
+                <div className="col-span-1"></div>
+              </div>
+              {documents.map((doc) => (
+                <div key={doc.id} className="grid grid-cols-12 gap-4 items-center px-4 py-3 bg-white rounded-lg shadow-sm hover:bg-gray-50">
+                  <div className="col-span-5 font-medium truncate">{doc.title}</div>
+                  <div className="col-span-4 text-sm text-gray-600 line-clamp-1">
+                    {doc.plain_text_content || "No content yet..."}
+                  </div>
+                  <div className="col-span-2 text-sm text-gray-500">
                     {formatDistanceToNow(new Date(doc.updated_at), { addSuffix: true })}
                   </div>
+                  <div className="col-span-1 text-right">
+                    <Link href={`/editor/${doc.id}`}>
+                      <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary/5">Open</Button>
+                    </Link>
+                  </div>
                 </div>
-                <Link href={`/editor/${doc.id}`}>
-                  <Button variant="outline" className="w-full">
-                    Open Document
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
+              ))}
+            </div>
+          )}
         </div>
       )}
 
