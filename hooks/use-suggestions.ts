@@ -34,6 +34,7 @@ export function useSuggestions(): UseSuggestionsReturn {
   const currentAnalysisRequest = useRef<AbortController | null>(null)
   const pendingAnalysisText = useRef<string>("")
   const analysisTimeoutId = useRef<NodeJS.Timeout | null>(null)
+  const isUserTyping = useRef<boolean>(false)
 
   // Initialize suggestion cache
   const { getCachedSuggestions, cacheSuggestions } = useSuggestionCache({
@@ -164,8 +165,11 @@ export function useSuggestions(): UseSuggestionsReturn {
     }
   }, [lastAnalyzedText, getCachedSuggestions, cacheSuggestions, documentId, cancelCurrentAnalysis])
 
-  // Debounced analysis trigger (100ms delay)
+  // Trigger analysis when user stops typing (500ms delay)
   const triggerAnalysis = useCallback((text: string) => {
+    // Mark that user is actively typing
+    isUserTyping.current = true
+
     // Cancel any pending analysis
     if (analysisTimeoutId.current) {
       clearTimeout(analysisTimeoutId.current)
@@ -177,15 +181,22 @@ export function useSuggestions(): UseSuggestionsReturn {
       return
     }
 
-    // Schedule new analysis with 100ms delay
+    // Set the pending text now so we can track changes
+    pendingAnalysisText.current = text
+
+    // Schedule analysis to run 500ms after user stops typing
     analysisTimeoutId.current = setTimeout(() => {
-      // Check if text has changed since we scheduled this analysis
+      // Mark that user has stopped typing
+      isUserTyping.current = false
+      
+      // Only proceed if this is still the current text
       if (text === pendingAnalysisText.current) {
-        console.log("Text unchanged since scheduling, skipping analysis")
-        return
+        console.log("User stopped typing for 500ms, starting analysis")
+        analyzeText(text)
+      } else {
+        console.log("Text changed since timeout was set, skipping analysis")
       }
-      analyzeText(text)
-    }, 100)
+    }, 500)
   }, [analyzeText])
 
   // Accept suggestion
