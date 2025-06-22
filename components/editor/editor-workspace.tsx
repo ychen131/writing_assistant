@@ -36,7 +36,7 @@ export function EditorWorkspace({
 }: EditorWorkspaceProps) {
   return (
     <div className="flex gap-8">
-      <div className="flex-1 rounded-xl bg-white p-8 shadow-md border border-gray-200">
+      <div className="w-[800px] max-h-3/4 h-full flex-shrink-0 rounded-xl bg-white p-8 shadow-md border border-gray-200">
         <LexicalEditor
           onTextChange={onTextChange}
           suggestions={suggestions}
