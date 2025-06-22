@@ -135,7 +135,7 @@ export function SuggestionsSidebar({
             variant="outline"
             size="sm"
             className="flex-1"
-            onClick={() => onAccept(index)}
+            onClick={() => onAccept(s.id)}
           >
             <Check className="h-4 w-4 mr-1" />
             Accept
@@ -145,7 +145,7 @@ export function SuggestionsSidebar({
           variant="ghost"
           size="sm"
           className="flex-1"
-          onClick={() => onIgnore(index)}
+          onClick={() => onIgnore(s.id)}
         >
           <X className="h-4 w-4 mr-1" />
           {isEngagementSuggestion(s) ? "Ignore" : "Ignore"}

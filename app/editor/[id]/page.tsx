@@ -129,7 +129,7 @@ export default function EditorPage() {
         isSaving={isSaving}
         lastSaved={lastSaved}
         isAnalyzing={isAnalyzing}
-        suggestionsCount={suggestions.length}
+        suggestionsCount={suggestions.filter(s => s.status === 'proposed').length}
 
         // propagated through for managing document versions
         documentId={documentId}
