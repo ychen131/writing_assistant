@@ -12,8 +12,8 @@ interface EditorWorkspaceProps {
   suggestions: AISuggestion[]
   selectedSuggestionId: string | null
   onSuggestionClick: (id: string | null) => void
-  acceptSuggestion: (index: number) => void
-  ignoreSuggestion: (index: number) => void
+  acceptSuggestion: (id: number) => void
+  ignoreSuggestion: (id: number) => void
   onRewrite: (originalText: string, rewrittenText: string) => void
   // Unified suggestions management
   onAddSuggestions: (suggestions: AISuggestion[]) => void

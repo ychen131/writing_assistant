@@ -35,8 +35,9 @@ export function useDocumentEditor(): UseDocumentEditorReturn {
   const [isSaving, setIsSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
 
-  // Debounced text for auto-save
+  // Debounced states for auto-save
   const debouncedTextContent = useDebounce(textContent, 2000)
+  const debouncedTitle = useDebounce(title, 2000)
 
   // Fetch document
   const fetchDocument = useCallback(async () => {
@@ -87,6 +88,7 @@ export function useDocumentEditor(): UseDocumentEditorReturn {
       }
 
       if (Object.keys(updates).length > 0) {
+        updates.updated_at = new Date().toISOString()
         const { error } = await supabase
           .from("documents")
           .update(updates)
@@ -94,7 +96,7 @@ export function useDocumentEditor(): UseDocumentEditorReturn {
 
         if (error) throw error
 
-        setDocument({ ...document, ...updates })
+        setDocument(prevDoc => prevDoc ? { ...prevDoc, ...updates } : null)
         setLastSaved(new Date())
         setLastSavedText(textContent)
       }
@@ -122,10 +124,10 @@ export function useDocumentEditor(): UseDocumentEditorReturn {
   }, [documentId, fetchDocument])
 
   useEffect(() => {
-    if (document && debouncedTextContent !== lastSavedText) {
+    if (document && (debouncedTextContent !== lastSavedText || debouncedTitle !== document.title)) {
       saveDocument()
     }
-  }, [debouncedTextContent, document, saveDocument, lastSavedText])
+  }, [debouncedTextContent, debouncedTitle, document, saveDocument, lastSavedText])
 
   return {
     document,

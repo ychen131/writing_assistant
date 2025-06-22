@@ -12,8 +12,8 @@ interface UseSuggestionsReturn {
   
   // Suggestion operations
   setSelectedSuggestionId: (id: string | null) => void
-  acceptSuggestion: (index: number, currentText: string) => string
-  ignoreSuggestion: (index: number) => void
+  acceptSuggestion: (id: number, currentText: string) => string
+  ignoreSuggestion: (id: number) => void
   addSuggestions: (newSuggestions: AISuggestion[]) => void
   
   // Analysis trigger
@@ -260,8 +260,8 @@ export function useSuggestions(): UseSuggestionsReturn {
   }, [analyzeText])
 
   // Accept suggestion
-  const acceptSuggestion = useCallback((index: number, currentText: string): string => {
-    const suggestion = suggestions[index]
+  const acceptSuggestion = useCallback((suggestionId: number, currentText: string): string => {
+    const suggestion = suggestions.find((s) => s.id === suggestionId)
     if (!suggestion) return currentText
 
     let newText = currentText;
@@ -283,7 +283,7 @@ export function useSuggestions(): UseSuggestionsReturn {
       newText = beforeText + suggestion.suggested_text + afterText
       
       // Mark the current one as accepted
-      setSuggestions(prev => prev.map((s, i) => i === index ? { ...s, status: "accepted" } : s))
+      setSuggestions(prev => prev.map((s) => s.id === suggestionId ? { ...s, status: "accepted" } : s))
     }
     
     setSelectedSuggestionId(null)
@@ -292,8 +292,8 @@ export function useSuggestions(): UseSuggestionsReturn {
   }, [suggestions])
 
   // Ignore suggestion
-  const ignoreSuggestion = useCallback((index: number) => {
-    setSuggestions(prev => prev.map((s, i) => i === index ? { ...s, status: "ignored" } : s))
+  const ignoreSuggestion = useCallback((suggestionId: number) => {
+    setSuggestions(prev => prev.map((s) => s.id === suggestionId ? { ...s, status: "ignored" } : s))
     setSelectedSuggestionId(null)
   }, [])
 

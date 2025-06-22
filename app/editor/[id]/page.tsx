@@ -76,8 +76,8 @@ export default function EditorPage() {
 
   // Handle suggestion acceptance
   // we need to accept the suggestion _and_ update the text content
-  const handleAcceptSuggestion = useCallback((index: number) => {
-    const newText = acceptSuggestion(index, textContent)
+  const handleAcceptSuggestion = useCallback((id: number) => {
+    const newText = acceptSuggestion(id, textContent)
     setLastAcceptedSuggestion(newText)
     updateTextAndSync(newText)
   }, [acceptSuggestion, textContent, updateTextAndSync])
