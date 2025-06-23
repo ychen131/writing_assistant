@@ -229,7 +229,7 @@ export function DocumentList() {
                             autoFocus
                           />
                         ) : (
-                          <CardTitle className="text-lg truncate">{doc.title}</CardTitle>
+                          <h3 className="text-lg max-w-96 font-semibold truncate overflow-hidden text-ellipsis">{doc.title}</h3>
                         )}
                       </div>
                       <DropdownMenu>
@@ -316,7 +316,7 @@ export function DocumentList() {
                         autoFocus
                       />
                     ) : (
-                      <span className="truncate">{doc.title}</span>
+                      <span className="truncate block">{doc.title}</span>
                     )}
                   </div>
                   <div className="col-span-4 text-sm text-gray-600 line-clamp-1">

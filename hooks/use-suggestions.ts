@@ -241,17 +241,33 @@ export function useSuggestions(): UseSuggestionsReturn {
       setSuggestions(prev => prev.filter(s => s.type !== 'smart-promo'));
     } else {
       // Existing logic for other suggestion types
-      const closestMatch = fuzzyMatch(currentText, suggestion.original_text, suggestion.start_index)
-      if(closestMatch === -1) {
-        console.log("no match found for suggestion", suggestion)
+      const originalText = suggestion.original_text.trim()
+      const closestMatch = fuzzyMatch(
+        currentText,
+        originalText,
+        suggestion.start_index
+      )
+      if (closestMatch === -1) {
+        console.log(
+          "no match found for suggestion",
+          suggestion,
+          "with pattern",
+          originalText
+        )
         return currentText
       }
       const beforeText = currentText.substring(0, closestMatch)
-      const afterText = currentText.substring(closestMatch + suggestion.original_text.length)
+      const afterText = currentText.substring(
+        closestMatch + originalText.length
+      )
       newText = beforeText + suggestion.suggested_text + afterText
       
       // Mark the current one as accepted
-      setSuggestions(prev => prev.map((s) => s.id === suggestionId ? { ...s, status: "accepted" } : s))
+      setSuggestions((prev) =>
+        prev.map((s) =>
+          s.id === suggestionId ? { ...s, status: "accepted" } : s
+        )
+      )
     }
     
     setSelectedSuggestionId(null)
